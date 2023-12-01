@@ -47,6 +47,9 @@ func part1(input string) int {
 }
 
 func part2(input string) int {
+	parsed := parseInput(input)
+	_ = parsed
+
 	return 0
 }
 
@@ -56,3 +59,7 @@ func parseInput(input string) (ans []int) {
 	}
 	return ans
 }
+
+// Helper functions for part 1
+
+// Helper functions for part 2
