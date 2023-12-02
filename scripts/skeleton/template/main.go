@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"advent-of-code-go/pkg/cast"
-
 	"github.com/atotto/clipboard"
 )
 
@@ -53,11 +51,8 @@ func part2(input string) int {
 	return 0
 }
 
-func parseInput(input string) (ans []int) {
-	for _, line := range strings.Split(input, "\n") {
-		ans = append(ans, cast.ToInt(line))
-	}
-	return ans
+func parseInput(input string) []string {
+	return strings.Split(input, "\n")
 }
 
 // Helper functions for part 1
