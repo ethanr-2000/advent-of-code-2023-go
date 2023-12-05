@@ -56,9 +56,9 @@ func part1(input string) int {
 func part2(input string) int {
 	cards := parseInput(input)
 
-	cardsWithCopies := copyCards(cards)
+	updateCardCounts(cards)
 
-	return len(cardsWithCopies)
+	return sumOfCardCounts(cards)
 }
 
 func parseInput(input string) []Card {
@@ -70,6 +70,7 @@ func parseInput(input string) []Card {
 			id:             getCardIdFromLine(line),
 			numbers:        getNumbersFromLine(line),
 			winningNumbers: getWinningNumbersFromLine(line),
+			count:          1,
 		})
 	}
 
@@ -82,6 +83,7 @@ type Card struct {
 	id             int
 	numbers        []int
 	winningNumbers []int
+	count          int
 }
 
 func getCardIdFromLine(line string) int {
@@ -129,30 +131,33 @@ func getMatchingNumbersCount(card Card) int {
 	return count
 }
 
-func findCardById(target int, cards []Card) Card {
-	for _, c := range cards {
-		if c.id == target {
-			return c
+func findCardById(target int, cards *[]Card) *Card {
+	for i := range *cards {
+		if (*cards)[i].id == target {
+			return &(*cards)[i]
 		}
 	}
-	return Card{
+	return &Card{
 		id: -1,
 	}
 }
 
-func copyCards(cards []Card) []Card {
-	i := 0
-	for i < len(cards) {
+func updateCardCounts(cards []Card) {
+	for i := 0; i < len(cards); i++ {
 		matchCount := getMatchingNumbersCount(cards[i])
 
-		j := 1
-		for j <= matchCount {
-			duplicateCard := findCardById(cards[i].id+j, cards)
-			cards = append(cards, duplicateCard)
-			j += 1
-		}
+		for j := 1; j <= matchCount; j++ {
+			card := findCardById(cards[i].id+j, &cards)
 
-		i += 1
+			card.count += cards[i].count
+		}
 	}
-	return cards
+}
+
+func sumOfCardCounts(cards []Card) int {
+	var sum int
+	for _, c := range cards {
+		sum += c.count
+	}
+	return sum
 }
