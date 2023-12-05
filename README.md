@@ -10,5 +10,6 @@ This repo was forked from https://github.com/jacob-alt-del/advent-of-code-go, wh
 * `make skeleton DAY=N YEAR=M` - Template for Nth day and Mth year
 
 ## Testing
+* `./run-tests.sh` - run all tests
 * `go test` - run against test input
 * `go run -part <1 or 2>` - run against main input

@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 	"testing"
 )
 
@@ -115,7 +114,6 @@ func Test_part1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fmt.Println("")
 			if got := part1(tt.input); got != tt.want {
 				t.Errorf("part1() = %v, want %v", got, tt.want)
 			}

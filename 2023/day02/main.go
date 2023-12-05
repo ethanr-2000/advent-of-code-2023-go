@@ -89,14 +89,14 @@ func getGameId(line string) int {
 }
 
 func getMaxColourNums(line string) (int, int, int) {
-	maxRed := matchNumbersBeforeString(line, "red")
-	maxGreen := matchNumbersBeforeString(line, "green")
-	maxBlue := matchNumbersBeforeString(line, "blue")
+	maxRed := getMaxNumberBeforeString(line, "red")
+	maxGreen := getMaxNumberBeforeString(line, "green")
+	maxBlue := getMaxNumberBeforeString(line, "blue")
 
 	return maxRed, maxGreen, maxBlue
 }
 
-func matchNumbersBeforeString(str string, strToMatch string) int {
+func getMaxNumberBeforeString(str string, strToMatch string) int {
 	numMatch := fmt.Sprintf(`(\d+) %s`, strToMatch)
 
 	re := regexp.MustCompile(numMatch)

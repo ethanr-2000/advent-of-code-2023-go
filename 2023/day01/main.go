@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -131,9 +132,7 @@ func getFirstNumberCharacterInString(str string) (rune, error) {
 func reverseString(input string) string {
 	runes := []rune(input)
 
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
-	}
+	slices.Reverse[[]rune](runes)
 
 	return string(runes)
 }

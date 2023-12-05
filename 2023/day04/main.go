@@ -2,10 +2,12 @@ package main
 
 import (
 	"advent-of-code-go/pkg/cast"
+	"advent-of-code-go/pkg/regex"
 	_ "embed"
 	"flag"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -45,7 +47,6 @@ func part1(input string) int {
 	totalPoints := 0
 	for _, c := range cards {
 		cardPoints := calculateCardPoints(c)
-		fmt.Println(c, cardPoints)
 		totalPoints += cardPoints
 	}
 
@@ -92,33 +93,21 @@ func getCardIdFromLine(line string) int {
 }
 
 func getWinningNumbersFromLine(line string) []int {
-	re := regexp.MustCompile(`((\d+ +)+)+\|`)
+	stringBeforeLine := strings.Split(line, "|")[0]
 
-	match := re.FindStringSubmatch(line)
-
-	var winningNumbers []int
-	for _, num := range strings.Fields(match[1]) {
-		winningNumbers = append(winningNumbers, cast.ToInt(num))
-	}
-	return winningNumbers
+	return regex.GetSpaceSeparatedNumbers(stringBeforeLine)
 }
 
 func getNumbersFromLine(line string) []int {
-	re := regexp.MustCompile(`\|(( +\d+)+)+`)
+	stringAfterLine := strings.Split(line, "|")[1]
 
-	match := re.FindStringSubmatch(line)
-
-	var numbers []int
-	for _, num := range strings.Fields(match[1]) {
-		numbers = append(numbers, cast.ToInt(num))
-	}
-	return numbers
+	return regex.GetSpaceSeparatedNumbers(stringAfterLine)
 }
 
 func calculateCardPoints(card Card) int {
 	points := 0
 	for _, winningNumber := range card.winningNumbers {
-		if intIsInList(winningNumber, card.numbers[:]) {
+		if slices.Contains(card.numbers, winningNumber) {
 			points *= 2
 			if points == 0 {
 				points = 1
@@ -128,21 +117,12 @@ func calculateCardPoints(card Card) int {
 	return points
 }
 
-func intIsInList(target int, list []int) bool {
-	for _, num := range list {
-		if num == target {
-			return true
-		}
-	}
-	return false
-}
-
 // Helper functions for part 2
 
 func getMatchingNumbersCount(card Card) int {
 	count := 0
 	for _, winningNumber := range card.winningNumbers {
-		if intIsInList(winningNumber, card.numbers[:]) {
+		if slices.Contains(card.numbers, winningNumber) {
 			count += 1
 		}
 	}
