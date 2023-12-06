@@ -78,3 +78,14 @@ func ToASCIICode(arg interface{}) int {
 func ASCIIIntToChar(code int) string {
 	return string(rune(code))
 }
+
+// Converts an array of int to an array of string
+func IntArrayToStringArray(arr []int) []string {
+	stringArray := make([]string, len(arr))
+
+	for i, num := range arr {
+		stringArray[i] = ToString(num)
+	}
+
+	return stringArray
+}

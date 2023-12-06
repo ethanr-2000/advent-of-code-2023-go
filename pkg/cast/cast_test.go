@@ -1,6 +1,7 @@
 package cast_test
 
 import (
+	"slices"
 	"testing"
 
 	"advent-of-code-go/pkg/cast"
@@ -88,6 +89,23 @@ func TestASCIIIntToChar(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := cast.ASCIIIntToChar(tt.args.code); got != tt.want {
 				t.Errorf("ASCIIIntToChar() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func Test_IntArrayToStringArray(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []int
+		want  []string
+	}{
+		{"example", []int{0, 1, 10, 1, 999}, []string{"0", "1", "10", "1", "999"}},
+		{"empty", []int{}, []string{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cast.IntArrayToStringArray(tt.input); slices.Compare[[]string](got, tt.want) != 0 {
+				t.Errorf("IntArrayToStringArray() = %v, want %v", got, tt.want)
 			}
 		})
 	}

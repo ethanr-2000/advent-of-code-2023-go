@@ -2,6 +2,17 @@
 
 This repo was forked from https://github.com/jacob-alt-del/advent-of-code-go, which itself is a trimmed down version of https://github.com/alexchao26/advent-of-code-go
 
+# Runtimes
+The table below shows the average of three consecutive runtimes. Doesn't include `go build`.
+
+| Day | Runtime | Day | Runtime | Day | Runtime | Day | Runtime | Day | Runtime |
+|-----|---------|-----|---------|-----|---------|-----|---------|-----|---------|
+| 1   | 72ms    | 6   | 71ms    | 11  |         | 16  |         | 21  |         |
+| 2   | 77ms    | 7   |         | 12  |         | 17  |         | 22  |         |
+| 3   | 75ms    | 8   |         | 13  |         | 18  |         | 23  |         |
+| 4   | 84ms    | 9   |         | 14  |         | 19  |         | 24  |         |
+| 5   | 696ms   | 10  |         | 15  |         | 20  |         | 25  |         |
+
 # Usage
 
 ## Create template
@@ -10,6 +21,9 @@ This repo was forked from https://github.com/jacob-alt-del/advent-of-code-go, wh
 * `make skeleton DAY=N YEAR=M` - Template for Nth day and Mth year
 
 ## Testing
-* `./run-tests.sh` - run all tests
-* `go test` - run against test input
-* `go run -part <1 or 2>` - run against main input
+* `./scripts/run-tests.sh` - run all tests
+
+#### In day folder
+* `go test` - run tests
+* `go run main.go` - run both parts
+* `go run main.go -part <1 or 2>` - run part 1 or 2
