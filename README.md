@@ -3,12 +3,12 @@
 This repo was forked from https://github.com/jacob-alt-del/advent-of-code-go, which itself is a trimmed down version of https://github.com/alexchao26/advent-of-code-go
 
 # Runtimes
-The table below shows the average of three consecutive runtimes. Doesn't include `go build`.
+The table below shows the best 3 of 4 consecutive runtimes. Doesn't include `go build`.
 
 | Day | Runtime | Day | Runtime | Day | Runtime | Day | Runtime | Day | Runtime |
 |-----|---------|-----|---------|-----|---------|-----|---------|-----|---------|
 | 1   | 72ms    | 6   | 71ms    | 11  |         | 16  |         | 21  |         |
-| 2   | 77ms    | 7   |         | 12  |         | 17  |         | 22  |         |
+| 2   | 77ms    | 7   | 120ms   | 12  |         | 17  |         | 22  |         |
 | 3   | 75ms    | 8   |         | 13  |         | 18  |         | 23  |         |
 | 4   | 84ms    | 9   |         | 14  |         | 19  |         | 24  |         |
 | 5   | 696ms   | 10  |         | 15  |         | 20  |         | 25  |         |

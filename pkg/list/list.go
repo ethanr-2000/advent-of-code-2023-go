@@ -16,3 +16,22 @@ func ListOfListsOfIntAreEqual(list1 [][]int, list2 [][]int) bool {
 
 	return true
 }
+
+func CountOfOccurencesOfStringInList(l []string, searchString string) int {
+	count := 0
+	for _, v := range l {
+		if v == searchString {
+			count++
+		}
+	}
+	return count
+}
+
+func ReplaceAllInstancesOfStringInList(l []string, oldStr string, newStr string) []string {
+	for i, s := range l {
+		if s == oldStr {
+			l[i] = newStr
+		}
+	}
+	return l
+}

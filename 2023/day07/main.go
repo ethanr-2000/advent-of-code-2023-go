@@ -2,6 +2,7 @@ package main
 
 import (
 	"advent-of-code-go/pkg/cast"
+	"advent-of-code-go/pkg/list"
 	_ "embed"
 	"flag"
 	"fmt"
@@ -24,18 +25,25 @@ func init() {
 
 func main() {
 	var part int
-	flag.IntVar(&part, "part", 1, "part 1 or 2")
+	flag.IntVar(&part, "part", 0, "part 1 or 2")
 	flag.Parse()
-	fmt.Println("Running part", part)
 
 	if part == 1 {
 		ans := part1(input)
+		fmt.Println("Running part 1")
+		clipboard.WriteAll(fmt.Sprintf("%v", ans))
+		fmt.Println("Output:", ans)
+	} else if part == 2 {
+		ans := part2(input)
+		fmt.Println("Running part 2")
 		clipboard.WriteAll(fmt.Sprintf("%v", ans))
 		fmt.Println("Output:", ans)
 	} else {
-		ans := part2(input)
-		clipboard.WriteAll(fmt.Sprintf("%v", ans))
-		fmt.Println("Output:", ans)
+		fmt.Println("Running all")
+		ans1 := part1(input)
+		fmt.Println("Part 1 Output:", ans1)
+		ans2 := part2(input)
+		fmt.Println("Part 2 Output:", ans2)
 	}
 }
 
@@ -43,7 +51,7 @@ func part1(input string) int {
 	parsed := parseInput(input)
 
 	hands := getHands(parsed)
-	hands = sortHandsByStrength(hands[:])
+	slices.SortFunc[[]Hand](hands, compareHandStrength)
 
 	r := 0
 	for i, h := range hands {
@@ -55,9 +63,16 @@ func part1(input string) int {
 
 func part2(input string) int {
 	parsed := parseInput(input)
-	_ = parsed
 
-	return 0
+	hands := getHands(parsed)
+	slices.SortFunc[[]Hand](hands, compareHandStrengthWithJokerRules)
+
+	r := 0
+	for i, h := range hands {
+		r += h.bid * (i + 1)
+	}
+
+	return r
 }
 
 func parseInput(input string) []string {
@@ -87,8 +102,6 @@ func getHands(input []string) []Hand {
 		splitLine := strings.Split(line, " ")
 
 		cards := strings.Split(splitLine[0], "")
-		// slices.SortFunc[[]string](cards, compareTwoCards)
-		// slices.Reverse[[]string](cards)
 
 		hands = append(hands, Hand{
 			cards: cards,
@@ -98,50 +111,75 @@ func getHands(input []string) []Hand {
 	return hands
 }
 
-// returns the count of each card type in hand
-func getCardCount(h Hand) []int {
+// returns the count of each card type in hand, e.g. { "A": 2 }
+func getCardCount(cards []string) map[string]int {
 	cardCountMap := make(map[string]int)
-	for _, c := range h.cards {
+	for _, c := range cards {
 		cardCountMap[c] += 1
 	}
 
-	var cardCountList []int
-	for _, val := range cardCountMap {
-		cardCountList = append(cardCountList, val)
+	return cardCountMap
+}
+
+func cardCountIsFiveOfAKind(cardCount map[string]int) bool {
+	for _, count := range cardCount {
+		return count == 5
 	}
-	return cardCountList
+	return false
 }
 
-func cardCountIsFiveOfAKind(cardCount []int) bool {
-	return cardCount[0] == 5
+func cardCountIsFourOfAKind(cardCount map[string]int) bool {
+	for _, count := range cardCount {
+		if count == 4 {
+			return true
+		}
+	}
+	return false
 }
 
-func cardCountIsFourOfAKind(cardCount []int) bool {
-	return cardCount[0] == 4 || cardCount[1] == 4
+func cardCountIsFullHouse(cardCount map[string]int) bool {
+	has2, has3 := false, false
+	for _, count := range cardCount {
+		if count == 3 {
+			has3 = true
+		}
+		if count == 2 {
+			has2 = true
+		}
+	}
+	return has3 && has2
 }
 
-func cardCountIsFullHouse(cardCount []int) bool {
-	return slices.Contains[[]int](cardCount, 3) && slices.Contains[[]int](cardCount, 2)
+func cardCountIsThreeOfAKind(cardCount map[string]int) bool {
+	for _, count := range cardCount {
+		if count == 3 {
+			return true
+		}
+	}
+	return false
 }
 
-func cardCountIsThreeOfAKind(cardCount []int) bool {
-	return slices.Contains[[]int](cardCount, 3) && slices.Contains[[]int](cardCount, 1)
+func cardCountIsTwoPair(cardCount map[string]int) bool {
+	pairCount := 0
+	for _, count := range cardCount {
+		if count == 2 {
+			pairCount++
+		}
+	}
+	return pairCount == 2
 }
 
-func cardCountIsTwoPair(cardCount []int) bool {
-	slices.Sort[[]int](cardCount)
-	slices.Reverse[[]int](cardCount)
-	return len(cardCount) == 3 && cardCount[0] == 2 && cardCount[1] == 2
+func cardCountIsOnePair(cardCount map[string]int) bool {
+	for _, count := range cardCount {
+		if count == 2 {
+			return true
+		}
+	}
+	return false
 }
 
-func cardCountIsOnePair(cardCount []int) bool {
-	slices.Sort[[]int](cardCount)
-	slices.Reverse[[]int](cardCount)
-	return len(cardCount) >= 3 && cardCount[0] == 2 && cardCount[1] == 1
-}
-
-func getHandClassification(h Hand) int {
-	cardCount := getCardCount(h)
+func getCardsType(cards []string) int {
+	cardCount := getCardCount(cards)
 
 	if cardCountIsFiveOfAKind(cardCount) {
 		return FiveOfAKind
@@ -164,53 +202,100 @@ func getHandClassification(h Hand) int {
 	return HighCard
 }
 
-func compareTwoCards(char1, char2 string) int {
-	rankingOrder := strings.Split("AKQJT98765432", "")
-
+func compareTwoCards(c1, c2 string, rankOrder []string) int {
 	index1 := -1
 	index2 := -1
 
-	for i, r := range rankingOrder {
-		if r == char1 {
+	for i, r := range rankOrder {
+		if r == c1 {
 			index1 = i
 		}
-		if r == char2 {
+		if r == c2 {
 			index2 = i
 		}
 	}
 
-	// Compare the indices to determine the rank
-	if index1 > index2 {
-		return -1
-	} else if index1 < index2 {
-		return 1
-	}
+	return index2 - index1
+}
 
-	return 0
+func compareHandStrength(h1, h2 Hand) int {
+	return compareCardsStrength(h1.cards, h2.cards)
+}
+
+func compareHandStrengthWithJokerRules(h1, h2 Hand) int {
+	return compareCardsStrengthWithJokerRules(h1.cards, h2.cards)
 }
 
 // returns +ve if h1 is greater than h2
 // returns -ve if h1 is weaker than to h2
-func compareHandStrength(h1 Hand, h2 Hand) int {
-	handClass1, handClass2 := getHandClassification(h1), getHandClassification(h2)
-	if handClass1 == handClass2 {
-		for i := range h1.cards {
-			cardComparison := compareTwoCards(h1.cards[i], h2.cards[i])
+func compareCardsStrength(cards1, cards2 []string) int {
+	rankingOrder := strings.Split("AKQJT98765432", "")
+
+	type1, type2 := getCardsType(cards1), getCardsType(cards2)
+	if type1 == type2 {
+		for i := range cards1 {
+			cardComparison := compareTwoCards(cards1[i], cards2[i], rankingOrder)
 
 			if cardComparison != 0 {
 				return cardComparison
 			}
 		}
+		return 1 // hands are totally equal, default h1 > h2
 	} else {
-		return handClass1 - handClass2
+		return type1 - type2
 	}
-	// hands are totally equal, default h1 > h2
-	return 1
-}
-
-func sortHandsByStrength(hands []Hand) []Hand {
-	slices.SortFunc[[]Hand](hands, compareHandStrength)
-	return hands
 }
 
 // Helper functions for part 2
+
+func getStrongestCardsWithJokerRules(cards []string, rankingOrder []string) []string {
+	jCount := list.CountOfOccurencesOfStringInList(cards, "J")
+
+	if jCount == 0 {
+		return cards
+	}
+
+	if jCount == 5 {
+		bestCard := rankingOrder[0]
+		return []string{bestCard, bestCard, bestCard, bestCard, bestCard}
+	}
+
+	var possibleCardsWithJReplaced [][]string
+	for c := range getCardCount(cards) {
+		newCardsWithJsReplaced := make([]string, len(cards))
+		copy(newCardsWithJsReplaced, cards)
+
+		list.ReplaceAllInstancesOfStringInList(newCardsWithJsReplaced, "J", c)
+
+		possibleCardsWithJReplaced = append(possibleCardsWithJReplaced, newCardsWithJsReplaced)
+	}
+
+	slices.SortFunc[[][]string](possibleCardsWithJReplaced, compareCardsStrength)
+	slices.Reverse[[][]string](possibleCardsWithJReplaced)
+
+	strongestCards := possibleCardsWithJReplaced[0]
+	return strongestCards
+}
+
+// returns +ve if h1 is greater than h2
+// returns -ve if h1 is weaker than to h2
+func compareCardsStrengthWithJokerRules(cards1 []string, cards2 []string) int {
+	rankingOrder := strings.Split("AKQT98765432J", "")
+
+	cards1WithJsReplaced := getStrongestCardsWithJokerRules(cards1, rankingOrder)
+	cards2WithJsReplaced := getStrongestCardsWithJokerRules(cards2, rankingOrder)
+
+	type1, type2 := getCardsType(cards1WithJsReplaced), getCardsType(cards2WithJsReplaced)
+	if type1 == type2 {
+		for i := range cards1 {
+			cardComparison := compareTwoCards(cards1[i], cards2[i], rankingOrder)
+
+			if cardComparison != 0 {
+				return cardComparison
+			}
+		}
+		return 1 // hands are totally equal, default h1 > h2
+	} else {
+		return type1 - type2
+	}
+}
