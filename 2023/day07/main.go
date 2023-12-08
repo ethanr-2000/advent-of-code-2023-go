@@ -219,19 +219,15 @@ func compareTwoCards(c1, c2 string, rankOrder []string) int {
 }
 
 func compareHandStrength(h1, h2 Hand) int {
-	return compareCardsStrength(h1.cards, h2.cards)
-}
-
-func compareHandStrengthWithJokerRules(h1, h2 Hand) int {
-	return compareCardsStrengthWithJokerRules(h1.cards, h2.cards)
+	return compareCardsStrength(h1.cards, h2.cards, getCardsType)
 }
 
 // returns +ve if h1 is greater than h2
 // returns -ve if h1 is weaker than to h2
-func compareCardsStrength(cards1, cards2 []string) int {
+func compareCardsStrength(cards1, cards2 []string, cardTypeFn func([]string) int) int {
 	rankingOrder := strings.Split("AKQJT98765432", "")
 
-	type1, type2 := getCardsType(cards1), getCardsType(cards2)
+	type1, type2 := cardTypeFn(cards1), cardTypeFn(cards2)
 	if type1 == type2 {
 		for i := range cards1 {
 			cardComparison := compareTwoCards(cards1[i], cards2[i], rankingOrder)
@@ -248,54 +244,37 @@ func compareCardsStrength(cards1, cards2 []string) int {
 
 // Helper functions for part 2
 
-func getStrongestCardsWithJokerRules(cards []string, rankingOrder []string) []string {
+func compareHandStrengthWithJokerRules(h1, h2 Hand) int {
+	return compareCardsStrength(h1.cards, h2.cards, getCardsTypeWithJokerRules)
+}
+
+func getCardsTypeWithJokerRules(cards []string) int {
+	baseType := getCardsType(cards)
 	jCount := list.CountOfOccurencesOfStringInList(cards, "J")
 
 	if jCount == 0 {
-		return cards
+		return baseType
 	}
-
-	if jCount == 5 {
-		bestCard := rankingOrder[0]
-		return []string{bestCard, bestCard, bestCard, bestCard, bestCard}
+	if baseType == HighCard {
+		return OnePair
 	}
-
-	var possibleCardsWithJReplaced [][]string
-	for c := range getCardCount(cards) {
-		newCardsWithJsReplaced := make([]string, len(cards))
-		copy(newCardsWithJsReplaced, cards)
-
-		list.ReplaceAllInstancesOfStringInList(newCardsWithJsReplaced, "J", c)
-
-		possibleCardsWithJReplaced = append(possibleCardsWithJReplaced, newCardsWithJsReplaced)
+	if baseType == OnePair {
+		return ThreeOfAKind
 	}
-
-	slices.SortFunc[[][]string](possibleCardsWithJReplaced, compareCardsStrength)
-	slices.Reverse[[][]string](possibleCardsWithJReplaced)
-
-	strongestCards := possibleCardsWithJReplaced[0]
-	return strongestCards
-}
-
-// returns +ve if h1 is greater than h2
-// returns -ve if h1 is weaker than to h2
-func compareCardsStrengthWithJokerRules(cards1 []string, cards2 []string) int {
-	rankingOrder := strings.Split("AKQT98765432J", "")
-
-	cards1WithJsReplaced := getStrongestCardsWithJokerRules(cards1, rankingOrder)
-	cards2WithJsReplaced := getStrongestCardsWithJokerRules(cards2, rankingOrder)
-
-	type1, type2 := getCardsType(cards1WithJsReplaced), getCardsType(cards2WithJsReplaced)
-	if type1 == type2 {
-		for i := range cards1 {
-			cardComparison := compareTwoCards(cards1[i], cards2[i], rankingOrder)
-
-			if cardComparison != 0 {
-				return cardComparison
-			}
-		}
-		return 1 // hands are totally equal, default h1 > h2
-	} else {
-		return type1 - type2
+	if baseType == TwoPair && jCount == 1 {
+		return FullHouse
 	}
+	if baseType == TwoPair && jCount == 2 {
+		return FourOfAKind
+	}
+	if baseType == ThreeOfAKind {
+		return FourOfAKind
+	}
+	if baseType == FullHouse {
+		return FiveOfAKind
+	}
+	if baseType == FourOfAKind {
+		return FiveOfAKind
+	}
+	return baseType
 }
