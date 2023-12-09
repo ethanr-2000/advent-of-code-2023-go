@@ -19,10 +19,10 @@ func GetNumbers(str string) []int {
 	return numbers
 }
 
-// "<anything> 10 11 12 13 <anything>" -> []int{ 10, 11, 12, 13}
+// "<anything> 10 11 -12 13 <anything>" -> []int{ 10, 11, -12, 13}
 func GetSpaceSeparatedNumbers(str string) []int {
 	// any number of digits, then any number of whitespace or nothing or EOL
-	re := regexp.MustCompile(`(\d+((\s+|^[\s\S]|$)))`)
+	re := regexp.MustCompile(`(-?\d+((\s+|^[\s\S]|$)))`)
 
 	matches := re.FindAllStringSubmatch(str, -1)
 

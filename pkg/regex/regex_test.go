@@ -67,8 +67,8 @@ func Test_GetSpaceSeparatedNumbers(t *testing.T) {
 		},
 		{
 			name:  "text with number and colon and list of numbers",
-			input: "A thing 1: 10 11 12 13",
-			want:  []int{10, 11, 12, 13},
+			input: "A thing 1: -10 11 12 13",
+			want:  []int{-10, 11, 12, 13},
 		},
 		{
 			name:  "some text",
@@ -77,8 +77,8 @@ func Test_GetSpaceSeparatedNumbers(t *testing.T) {
 		},
 		{
 			name:  "numbers then some text",
-			input: "10 11 12 13 | A thing",
-			want:  []int{10, 11, 12, 13},
+			input: "10 11 -12 13 | A thing",
+			want:  []int{10, 11, -12, 13},
 		},
 		{
 			name:  "one number",
