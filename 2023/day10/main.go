@@ -45,18 +45,17 @@ func main() {
 }
 
 func part1(input string) int {
-	parsed := parseInput(input)
-
-	l := traverseMap(parsed)
+	grid := parseInput(input)
+	l := traverseGrid(grid)
 
 	return len(l) / 2
 }
 
 func part2(input string) int {
-	parsed := parseInput(input)
-	loop := traverseMap(parsed)
+	grid := parseInput(input)
+	loop := traverseGrid(grid)
 
-	return countSpacesWithinLoop(parsed, loop)
+	return countSpacesWithinLoop(grid, loop)
 }
 
 func parseInput(input string) Grid2D {
@@ -79,27 +78,28 @@ type Location struct {
 }
 
 var PipeConnections = map[string][2][2]int{
+	// these are defined with y, x
 	"|": {{-1, 0}, {1, 0}},  // above or below
 	"-": {{0, -1}, {0, 1}},  // left or right
 	"J": {{-1, 0}, {0, -1}}, // above or left
 	"F": {{1, 0}, {0, 1}},   // below or right
 	"7": {{1, 0}, {0, -1}},  // below or left
 	"L": {{-1, 0}, {0, 1}},  // above or right
+	".": {{0, 0}, {0, 0}},   // no connection
 }
 
-func getNextLocation(pipe string, current, previous Location) Location {
+func getNextLocations(pipe string, current Location) []Location {
 	possibleSteps := PipeConnections[pipe]
 
+	l := []Location{}
 	for _, step := range possibleSteps {
 		possibleNextLocation := Location{
 			x: current.x + step[1],
 			y: current.y + step[0],
 		}
-		if !sameLocation(possibleNextLocation, previous) {
-			return possibleNextLocation
-		}
+		l = append(l, possibleNextLocation)
 	}
-	return Location{-1, -1}
+	return l
 }
 
 func sameLocation(l1, l2 Location) bool {
@@ -117,37 +117,16 @@ func getStartingLocation(m Grid2D) Location {
 	return Location{-1, -1}
 }
 
-// func getNextStepFromStart(m Grid2D, start Location) Location {
-// 	possibleMoves := [][2]int{
-// 		{-1, 0},
-// 		{1, 0},
-// 		{0, -1},
-// 		{0, 1},
-// 	}
-
-// 	for _, move := range possibleMoves {
-// 		possibleNextLocation := Location{
-// 			x: start.x + move[1],
-// 			y: start.y + move[0],
-// 		}
-// 		possiblePipe := m[possibleNextLocation.y][possibleNextLocation.x]
-
-// 		for _, connection := range PipeConnections[possiblePipe] {
-// 			if (connection[1]+move[1]) == 0 && (connection[0]+move[0]) == 0 {
-// 				return possibleNextLocation
-// 			}
-// 		}
-// 	}
-
-// 	return Location{-1, -1}
-// }
+func locationOutsideGrid(l Location, m Grid2D) bool {
+	return l.x < 0 || l.x == len(m[0]) || l.y < 0 || l.y == len(m)
+}
 
 func replaceSWithPipe(m Grid2D, start Location) {
 	possibleMoves := [][2]int{
 		{1, 0},
-		{-1, 0},
 		{0, 1},
 		{0, -1},
+		{-1, 0},
 	}
 
 	correctMoves := [][2]int{}
@@ -156,17 +135,23 @@ func replaceSWithPipe(m Grid2D, start Location) {
 			x: start.x + move[1],
 			y: start.y + move[0],
 		}
-		possiblePipe := m[possibleNextLocation.y][possibleNextLocation.x]
 
-		for _, connection := range PipeConnections[possiblePipe] {
+		// outside of grid
+		if locationOutsideGrid(possibleNextLocation, m) {
+			continue
+		}
+
+		possibleNextPipe := m[possibleNextLocation.y][possibleNextLocation.x]
+		for _, connection := range PipeConnections[possibleNextPipe] {
 			if (connection[1]+move[1]) == 0 && (connection[0]+move[0]) == 0 {
-				correctMoves = append(correctMoves, connection)
+				correctMoves = append(correctMoves, move)
 			}
 		}
 	}
 
 	for k, v := range PipeConnections {
-		if listOf2IntEqual(v[0], correctMoves[0]) && listOf2IntEqual(v[1], correctMoves[1]) {
+		if listOf2IntEqual(v[0], correctMoves[0]) && listOf2IntEqual(v[1], correctMoves[1]) ||
+			listOf2IntEqual(v[1], correctMoves[0]) && listOf2IntEqual(v[0], correctMoves[1]) {
 			m[start.y][start.x] = k
 		}
 	}
@@ -185,17 +170,28 @@ func lastValue[T any](n []T) T {
 	return n[len(n)-1]
 }
 
-func traverseMap(m Grid2D) []Location {
+func traverseGrid(m Grid2D) []Location {
 	startingLocation := getStartingLocation(m)
 	replaceSWithPipe(m, startingLocation)
 
 	locations := []Location{startingLocation}
 
+	startingPipe := m[startingLocation.y][startingLocation.x]
+	locations = append(locations, getNextLocations(startingPipe, locations[0])[0])
+
 	for !sameLocation(lastValue(locations), startingLocation) || len(locations) == 1 {
 		currentLocation := lastValue[Location](locations)
+		previousLocation := locations[len(locations)-2]
 
 		currentPipe := m[currentLocation.y][currentLocation.x]
-		locations = append(locations, getNextLocation(currentPipe, currentLocation, locations[len(locations)-2]))
+
+		possibleNextLocations := getNextLocations(currentPipe, currentLocation)
+		for _, l := range possibleNextLocations {
+			// get the next location that isn't the previous one
+			if !sameLocation(l, previousLocation) {
+				locations = append(locations, l)
+			}
+		}
 	}
 	return locations
 }
@@ -203,6 +199,11 @@ func traverseMap(m Grid2D) []Location {
 // Helper functions for part 2
 
 func countSpacesWithinLoop(grid Grid2D, loop []Location) int {
+	// scan line by line
+	// start "outside the loop"
+	// if in we're in the loop and on a tile, increment
+	// when we hit the loop, certain conditions flip in/out
+
 	count := 0
 	for y, line := range grid {
 		inLoop := false
@@ -218,6 +219,7 @@ func countSpacesWithinLoop(grid Grid2D, loop []Location) int {
 				start := grid[y][x]
 				x++
 				for grid[y][x] == "-" {
+					// horizontal pipes don't bring us in/out
 					x++
 				}
 				end := grid[y][x]
@@ -233,82 +235,9 @@ func countSpacesWithinLoop(grid Grid2D, loop []Location) int {
 
 func locationInList(l1 Location, ls []Location) bool {
 	for _, l2 := range ls {
-		if l1.x == l2.x && l1.y == l2.y {
+		if sameLocation(l1, l2) {
 			return true
 		}
 	}
 	return false
 }
-
-// func padGrid(grid Grid2D, padding string) Grid2D {
-// 	paddedGrid := make(Grid2D, len(grid)+2)
-
-// 	paddedGrid[0] = padList(len(grid[0])+2, padding)
-// 	paddedGrid[len(paddedGrid)-1] = padList(len(grid[0])+2, padding)
-
-// 	for i, row := range grid {
-// 		paddedGrid[i+1] = padListString(row, padding)
-// 	}
-
-// 	return paddedGrid
-// }
-
-// func padListString(list []string, padding string) []string {
-// 	paddedList := make([]string, len(list)+2)
-// 	paddedList[0] = padding
-
-// 	for i, val := range list {
-// 		paddedList[i+1] = val
-// 	}
-
-// 	paddedList[len(paddedList)-1] = padding
-// 	return paddedList
-// }
-
-// func padList(length int, padding string) []string {
-// 	paddedList := make([]string, length)
-// 	for i := range paddedList {
-// 		paddedList[i] = padding
-// 	}
-// 	return paddedList
-// }
-
-// func countFalseValuesInBoolGrid(grid [][]bool) int {
-// 	count := 0
-
-// 	for _, row := range grid {
-// 		for _, value := range row {
-// 			if !value {
-// 				count++
-// 			}
-// 		}
-// 	}
-
-// 	return count
-// }
-
-// func countSpacesWithinLoop(grid Grid2D, loop []Location) int {
-// 	paddedGrid := padGrid(grid, ".")
-
-// 	visited := make([][]bool, len(paddedGrid))
-// 	for i := range visited {
-// 		visited[i] = make([]bool, len(paddedGrid[0]))
-// 	}
-
-// 	dfs(paddedGrid, 0, 0, loop, visited)
-
-// 	return countFalseValuesInBoolGrid(visited)
-// }
-
-// func dfs(grid Grid2D, x, y int, loop []Location, visited [][]bool) {
-// 	if y < 0 || y >= len(grid) || x < 0 || x >= len(grid[0]) || visited[y][x] || locationInList(Location{x, y}, loop) {
-// 		return
-// 	}
-
-// 	visited[y][x] = true
-
-// 	dfs(grid, x+1, y, loop, visited)
-// 	dfs(grid, x-1, y, loop, visited)
-// 	dfs(grid, x, y+1, loop, visited)
-// 	dfs(grid, x, y-1, loop, visited)
-// }

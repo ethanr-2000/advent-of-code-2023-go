@@ -10,8 +10,8 @@ The table below shows the best 3 of 4 consecutive runtimes. Doesn't include `go 
 | 1   | 72ms    | 6   | 71ms    | 11  |         | 16  |         | 21  |         |
 | 2   | 77ms    | 7   | 120ms   | 12  |         | 17  |         | 22  |         |
 | 3   | 75ms    | 8   | 79ms    | 13  |         | 18  |         | 23  |         |
-| 4   | 84ms    | 9   |         | 14  |         | 19  |         | 24  |         |
-| 5   | 696ms   | 10  |         | 15  |         | 20  |         | 25  |         |
+| 4   | 84ms    | 9   | 81m     | 14  |         | 19  |         | 24  |         |
+| 5   | 696ms   | 10  | 122ms   | 15  |         | 20  |         | 25  |         |
 
 # Usage
 

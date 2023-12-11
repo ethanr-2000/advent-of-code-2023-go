@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-var example1 = `
-7-F7-
+var example1 = `7-F7-
 .FJ|7
 SJLL7
 |F--J
