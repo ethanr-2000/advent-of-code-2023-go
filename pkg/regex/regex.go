@@ -45,3 +45,21 @@ func HasText(s string) bool {
 	regex := regexp.MustCompile(`[a-zA-Z]`)
 	return regex.MatchString(s)
 }
+
+// matches line that contains given regex
+func Contains(s string, regexToMatch string) bool {
+	regex := regexp.MustCompile(regexToMatch)
+	return regex.MatchString(s)
+}
+
+// returns index of given character
+func IndicesOfCharacter(s string, charToMatch string) []int {
+	regex := regexp.MustCompile(charToMatch)
+	matches := regex.FindAllStringIndex(s, -1)
+
+	indices := []int{}
+	for _, match := range matches {
+		indices = append(indices, match[0])
+	}
+	return indices
+}
