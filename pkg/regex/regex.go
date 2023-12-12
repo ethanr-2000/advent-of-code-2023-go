@@ -54,7 +54,7 @@ func Contains(s string, regexToMatch string) bool {
 
 // returns index of given character
 func IndicesOfCharacter(s string, charToMatch string) []int {
-	regex := regexp.MustCompile(charToMatch)
+	regex := regexp.MustCompile(regexp.QuoteMeta(charToMatch))
 	matches := regex.FindAllStringIndex(s, -1)
 
 	indices := []int{}
