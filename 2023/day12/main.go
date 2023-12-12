@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/atotto/clipboard"
 )
@@ -53,7 +52,7 @@ func part1(input string) int {
 	parsed := parseInput(input)
 
 	conditionRecords := getConditionRecords(parsed, 0)
-	cache := make(map[string]int)
+	cache := make(map[string]int, 1000000)
 
 	sum := 0
 	for _, cr := range conditionRecords {
@@ -67,21 +66,12 @@ func part2(input string) int {
 	parsed := parseInput(input)
 
 	conditionRecords := getConditionRecords(parsed, 4)
-	cache := make(map[string]int)
+	cache := make(map[string]int, 1000000)
 
 	sum := 0
-	times := []int{}
 	for _, cr := range conditionRecords {
-		start := time.Now()
 		sum += countWays(cr, &cache)
-		times = append(times, endTime(start))
 	}
-
-	timeTotal := 0
-	for _, t := range times {
-		timeTotal += t
-	}
-	fmt.Println("Average time", timeTotal/len(times))
 
 	return sum
 }
@@ -108,49 +98,38 @@ func getConditionRecords(input []string, duplication int) []ConditionRecord {
 	return r
 }
 
-func endTime(start time.Time) int {
-	endTime := time.Now()
-	elapsedTime := endTime.Sub(start)
-	return int(elapsedTime)
-}
-
 func countWays(cr ConditionRecord, cache *map[string]int) int {
 	if val, exists := (*cache)[hashConditionRecord(cr)]; exists {
 		// we've seen this one before!
 		return val
 	}
 
-	if len(cr.record) == 0 {
-		// cacheResult(cache, cr, 0)
-		return 0 // out of records
+	if len(cr.record) < list.Sum(cr.groups) {
+		return cacheResult(cache, cr, 0) // out of records
 	}
+
+	// if regex.Count(cr.record, '.') == len(cr.record) {
+	// 	if len(cr.groups) != 0 {
+	// 		return cacheResult(cache, cr, 0) // all dot
+	// 	}
+	// }
 
 	if len(cr.groups) == 0 {
 		if regex.Contains(cr.record, "#") {
-			// cacheResult(cache, cr, 0)
-			return 0 // there are springs left that aren't in a group
+			return cacheResult(cache, cr, 0) // there are springs left that aren't in a group
 		} else {
-			// cacheResult(cache, cr, 1)
-			return 1 // all springs are accounted for
+			return cacheResult(cache, cr, 1) // all springs are accounted for
 		}
 	}
 
 	record := []rune(cr.record)
-
-	// early exit conditions
-	// if regex.Count(cr.record, '#')+regex.Count(cr.record, '?') < list.Sum(cr.groups) {
-	// 	// not enough characters left to make groups
-	// 	cacheResult(cache, cr, 0)
-	// 	return 0
-	// }
 
 	if record[0] == '.' { // the next one is a dot, we don't care about that
 		ways := countWays(ConditionRecord{
 			record: strings.TrimLeft(cr.record, "."),
 			groups: cr.groups,
 		}, cache)
-		cacheResult(cache, cr, ways)
-		return ways
+		return cacheResult(cache, cr, ways)
 	}
 
 	if record[0] == '?' {
@@ -160,49 +139,44 @@ func countWays(cr ConditionRecord, cache *map[string]int) int {
 		}, cache)
 
 		ifHash := countWays(ConditionRecord{
-			record: string_util.ChangeRuneAtIndex(cr.record, 0, '#'), // what if the next one is a #
+			record: string_util.ChangeRuneAtIndex(cr.record, 0, '#'), // treat next as #
 			groups: cr.groups,
 		}, cache)
 
-		cacheResult(cache, cr, ifDot+ifHash)
-
-		return ifDot + ifHash
+		return cacheResult(cache, cr, ifDot+ifHash)
 	}
 
 	if record[0] == '#' {
 		groupLen := regex.LengthsOfGroupsOfChar(cr.record, '#')[0]
 		if groupLen > cr.groups[0] {
-			cacheResult(cache, cr, 0)
-			return 0 // the group is too long, invalid
+			return cacheResult(cache, cr, 0) // the group is too long, invalid
 		}
 		if groupLen == cr.groups[0] {
 			ways := countWays(ConditionRecord{
 				record: string(record[groupLen+1:]), // there needs to be a space after a group
 				groups: cr.groups[1:],               // done this group
 			}, cache)
-			cacheResult(cache, cr, ways)
-			return ways
+			return cacheResult(cache, cr, ways)
 		}
 
 		if record[groupLen] == '.' { // if the next spot after the group is a .
-			cacheResult(cache, cr, 0)
-			return 0 // the group isn't long enough and we can't make it longer
+			return cacheResult(cache, cr, 0) // the group isn't long enough and we can't make it longer
 		}
 		// otherwise it's a ?
 		ways := countWays(ConditionRecord{
 			record: string_util.ChangeRuneAtIndex(cr.record, groupLen, '#'), // the group isn't long enough, but there is a space
 			groups: cr.groups,
 		}, cache)
-		cacheResult(cache, cr, ways)
-		return ways
+		return cacheResult(cache, cr, ways)
 	}
 
 	fmt.Println("not sure what happened", cr)
 	return 0
 }
 
-func cacheResult(c *map[string]int, cr ConditionRecord, res int) {
+func cacheResult(c *map[string]int, cr ConditionRecord, res int) int {
 	(*c)[hashConditionRecord(cr)] = res
+	return res
 }
 
 func hashConditionRecord(cr ConditionRecord) string {
