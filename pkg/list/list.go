@@ -35,3 +35,36 @@ func ReplaceAllInstancesOfStringInList(l []string, oldStr string, newStr string)
 	}
 	return l
 }
+
+// deletes values in slice at all indices, and returns a new list
+func DeleteAtIndices[T any](s []T, is []int) []T {
+	slices.Sort[[]int](is)
+	slices.Reverse[[]int](is)
+	newS := make([]T, len(s))
+	copy(newS, s)
+	for _, i := range is {
+		newS = slices.Delete(newS, i, i+1)
+	}
+	return newS
+}
+
+// repeats a slice a given number of times. duplication = 0 means no change
+func Repeat[T any](slice []T, duplication int) []T {
+	if duplication < 1 || len(slice) == 0 {
+		return slice
+	}
+
+	result := make([]T, 0, len(slice)*duplication)
+	for i := 0; i <= duplication; i++ {
+		result = append(result, slice...)
+	}
+	return result
+}
+
+func Sum(s []int) int {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	return sum
+}

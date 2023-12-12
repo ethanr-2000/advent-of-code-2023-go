@@ -48,7 +48,7 @@ func HasText(s string) bool {
 
 // matches line that contains given regex
 func Contains(s string, regexToMatch string) bool {
-	regex := regexp.MustCompile(regexToMatch)
+	regex := regexp.MustCompile(regexp.QuoteMeta(regexToMatch))
 	return regex.MatchString(s)
 }
 
@@ -62,4 +62,22 @@ func IndicesOfCharacter(s string, charToMatch string) []int {
 		indices = append(indices, match[0])
 	}
 	return indices
+}
+
+// "###.#.##....", "#" -> []int{3, 1, 2}
+func LengthsOfGroupsOfChar(s string, c rune) []int {
+	re := regexp.MustCompile(regexp.QuoteMeta(string(c)) + "+")
+	matches := re.FindAllString(s, -1)
+
+	groupLengths := []int{}
+	for _, match := range matches {
+		groupLengths = append(groupLengths, len(match))
+	}
+	return groupLengths
+}
+
+// counts instances of rune in a string
+func Count(s string, c rune) int {
+	re := regexp.MustCompile(regexp.QuoteMeta(string(c)))
+	return len(re.FindAllString(s, -1))
 }

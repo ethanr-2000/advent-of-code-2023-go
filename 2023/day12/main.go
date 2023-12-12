@@ -1,13 +1,15 @@
 package main
 
 import (
+	"advent-of-code-go/pkg/cast"
+	"advent-of-code-go/pkg/list"
 	"advent-of-code-go/pkg/regex"
+	"advent-of-code-go/pkg/string_util"
 	_ "embed"
 	"flag"
 	"fmt"
-	"regexp"
-	"slices"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
 )
@@ -49,15 +51,13 @@ func main() {
 
 func part1(input string) int {
 	parsed := parseInput(input)
-	_ = parsed
 
-	conditionRecords := getConditionRecords(parsed)
+	conditionRecords := getConditionRecords(parsed, 0)
+	cache := make(map[string]int)
 
 	sum := 0
 	for _, cr := range conditionRecords {
-		arr := countPossibleArrangements(cr)
-		fmt.Println(arr)
-		sum += arr
+		sum += countWays(cr, &cache)
 	}
 
 	return sum
@@ -65,9 +65,25 @@ func part1(input string) int {
 
 func part2(input string) int {
 	parsed := parseInput(input)
-	_ = parsed
 
-	return 0
+	conditionRecords := getConditionRecords(parsed, 4)
+	cache := make(map[string]int)
+
+	sum := 0
+	times := []int{}
+	for _, cr := range conditionRecords {
+		start := time.Now()
+		sum += countWays(cr, &cache)
+		times = append(times, endTime(start))
+	}
+
+	timeTotal := 0
+	for _, t := range times {
+		timeTotal += t
+	}
+	fmt.Println("Average time", timeTotal/len(times))
+
+	return sum
 }
 
 func parseInput(input string) []string {
@@ -81,193 +97,120 @@ type ConditionRecord struct {
 	groups []int
 }
 
-func getConditionRecords(input []string) []ConditionRecord {
+func getConditionRecords(input []string, duplication int) []ConditionRecord {
 	r := []ConditionRecord{}
 	for _, line := range input {
 		r = append(r, ConditionRecord{
-			record: strings.Split(line, " ")[0],
-			groups: regex.GetNumbers(line),
+			record: string_util.Repeat(strings.Split(line, " ")[0], duplication, "?") + "..", // append two dot so that there are fewer branches
+			groups: list.Repeat[int](regex.GetNumbers(line), duplication),
 		})
 	}
 	return r
 }
 
-func countPossibleArrangements(cr ConditionRecord) int {
-	allPossibleCrs := placeNextDamagedSpring([]ConditionRecord{cr})
-
-	// fmt.Println("\n", uniqueRecords(allPossibleCrs))
-
-	return len(uniqueRecords(allPossibleCrs))
+func endTime(start time.Time) int {
+	endTime := time.Now()
+	elapsedTime := endTime.Sub(start)
+	return int(elapsedTime)
 }
 
-func getLengthOfGroupsOfCharacter(s string, c string) []int {
-	re := regexp.MustCompile(fmt.Sprintf("%s+", c))
-	matches := re.FindAllString(s, -1)
-
-	groupLengths := []int{}
-	for _, match := range matches {
-		groupLengths = append(groupLengths, len(match))
-	}
-	return groupLengths
-}
-
-func isValidRecord(cr ConditionRecord) bool {
-	groupLengths := getLengthOfGroupsOfCharacter(cr.record, "#")
-
-	for i := range groupLengths {
-		if groupLengths[i] != cr.groups[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func isInvalidRecord(cr ConditionRecord) bool {
-	groupLengths := getLengthOfGroupsOfCharacter(cr.record, "#")
-
-	for i := range groupLengths {
-		if groupLengths[i] != cr.groups[i] {
-			return true
-		}
-	}
-	return false
-}
-
-func changeRuneAtIndexOfString(s string, i int, c rune) string {
-	strRune := []rune(s)
-	strRune[i] = c
-	return string(strRune)
-}
-
-func allSpringsOfAllRecordsPlaced(crs []ConditionRecord) bool {
-	for i := 0; i < len(crs); i++ {
-		if !allSpringsPlaced(crs[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func allSpringsPlaced(cr ConditionRecord) bool {
-	desiredNum := 0
-	for _, n := range cr.groups {
-		desiredNum += n
+func countWays(cr ConditionRecord, cache *map[string]int) int {
+	if val, exists := (*cache)[hashConditionRecord(cr)]; exists {
+		// we've seen this one before!
+		return val
 	}
 
-	return desiredNum <= len(regex.IndicesOfCharacter(cr.record, "#"))
-}
+	if len(cr.record) == 0 {
+		// cacheResult(cache, cr, 0)
+		return 0 // out of records
+	}
 
-func uniqueRecords(crs []ConditionRecord) []ConditionRecord {
-	uniqueMap := make(map[string]bool)
-	var unique []ConditionRecord
-
-	for _, cr := range crs {
-		if _, exists := uniqueMap[cr.record]; !exists {
-			uniqueMap[cr.record] = true
-			unique = append(unique, cr)
+	if len(cr.groups) == 0 {
+		if regex.Contains(cr.record, "#") {
+			// cacheResult(cache, cr, 0)
+			return 0 // there are springs left that aren't in a group
+		} else {
+			// cacheResult(cache, cr, 1)
+			return 1 // all springs are accounted for
 		}
 	}
 
-	return unique
+	record := []rune(cr.record)
+
+	// early exit conditions
+	// if regex.Count(cr.record, '#')+regex.Count(cr.record, '?') < list.Sum(cr.groups) {
+	// 	// not enough characters left to make groups
+	// 	cacheResult(cache, cr, 0)
+	// 	return 0
+	// }
+
+	if record[0] == '.' { // the next one is a dot, we don't care about that
+		ways := countWays(ConditionRecord{
+			record: strings.TrimLeft(cr.record, "."),
+			groups: cr.groups,
+		}, cache)
+		cacheResult(cache, cr, ways)
+		return ways
+	}
+
+	if record[0] == '?' {
+		ifDot := countWays(ConditionRecord{
+			record: string(record[1:]), // treat as a . and skip it
+			groups: cr.groups,
+		}, cache)
+
+		ifHash := countWays(ConditionRecord{
+			record: string_util.ChangeRuneAtIndex(cr.record, 0, '#'), // what if the next one is a #
+			groups: cr.groups,
+		}, cache)
+
+		cacheResult(cache, cr, ifDot+ifHash)
+
+		return ifDot + ifHash
+	}
+
+	if record[0] == '#' {
+		groupLen := regex.LengthsOfGroupsOfChar(cr.record, '#')[0]
+		if groupLen > cr.groups[0] {
+			cacheResult(cache, cr, 0)
+			return 0 // the group is too long, invalid
+		}
+		if groupLen == cr.groups[0] {
+			ways := countWays(ConditionRecord{
+				record: string(record[groupLen+1:]), // there needs to be a space after a group
+				groups: cr.groups[1:],               // done this group
+			}, cache)
+			cacheResult(cache, cr, ways)
+			return ways
+		}
+
+		if record[groupLen] == '.' { // if the next spot after the group is a .
+			cacheResult(cache, cr, 0)
+			return 0 // the group isn't long enough and we can't make it longer
+		}
+		// otherwise it's a ?
+		ways := countWays(ConditionRecord{
+			record: string_util.ChangeRuneAtIndex(cr.record, groupLen, '#'), // the group isn't long enough, but there is a space
+			groups: cr.groups,
+		}, cache)
+		cacheResult(cache, cr, ways)
+		return ways
+	}
+
+	fmt.Println("not sure what happened", cr)
+	return 0
 }
 
-func deleteIndicesOfSlice[T any](s []T, is []int) []T {
-	slices.Sort[[]int](is)
-	slices.Reverse[[]int](is)
-	newS := make([]T, len(s))
-	copy(newS, s)
-	for _, i := range is {
-		newS = slices.Delete(newS, i, i+1)
-	}
-	return newS
+func cacheResult(c *map[string]int, cr ConditionRecord, res int) {
+	(*c)[hashConditionRecord(cr)] = res
 }
 
-func conditionRecordInList(cr1 ConditionRecord, crs []ConditionRecord) bool {
-	for _, cr2 := range crs {
-		if conditionRecordsSame(cr1, cr2) {
-			return true
-		}
+func hashConditionRecord(cr ConditionRecord) string {
+	hashedNums := make([]string, len(cr.groups))
+	for i, n := range cr.groups {
+		hashedNums[i] = cast.ToString(n)
 	}
-	return false
-}
-
-func invalidSoFar(cr ConditionRecord) bool {
-	groupLengths := getLengthOfGroupsOfCharacter(cr.record, "#")
-
-	groupNum := 0
-	for i := 0; i < len(groupLengths); i++ {
-		for groupNum < len(cr.groups) {
-			if groupLengths[i] > cr.groups[groupNum] { // you know it's invalid if the group is too long
-				if groupNum == len(cr.groups)-1 { // if it's too big and it's the last one
-					return true
-				}
-				groupNum++
-			} else {
-				groupNum++
-				break
-			}
-		}
-	}
-	return false
-}
-
-func placeNextDamagedSpring(crs []ConditionRecord) []ConditionRecord {
-	if allSpringsOfAllRecordsPlaced(crs) {
-		crs = slices.DeleteFunc[[]ConditionRecord](crs, isInvalidRecord)
-		return crs
-	}
-
-	invalidRecordIndices := []int{}
-	for i := 0; i < len(crs); i++ {
-		possibleLocations := regex.IndicesOfCharacter(crs[i].record, "?")
-
-		if allSpringsPlaced(crs[i]) || len(possibleLocations) == 0 { // no possible next placement. finished either valid or invalid.
-			if !isValidRecord(crs[i]) { // delete if invalid
-				invalidRecordIndices = append(invalidRecordIndices, i)
-			}
-			continue
-		}
-
-		if len(possibleLocations) > 1 {
-			for _, l := range possibleLocations[1:] { // don't want to append all locations, just the ones above 1
-				newCr := ConditionRecord{
-					record: crs[i].record,
-					groups: crs[i].groups,
-				}
-				newCr.record = changeRuneAtIndexOfString(newCr.record, l, '#')
-
-				if !conditionRecordInList(newCr, crs) && !invalidSoFar(newCr) {
-					crs = append(crs, newCr)
-				}
-			}
-		}
-
-		newCr := ConditionRecord{
-			record: crs[i].record,
-			groups: crs[i].groups,
-		}
-		newCr.record = changeRuneAtIndexOfString(newCr.record, possibleLocations[0], '#')
-		if !invalidSoFar(newCr) {
-			crs[i].record = newCr.record
-		}
-
-	}
-
-	trimmedCrs := deleteIndicesOfSlice[ConditionRecord](crs, invalidRecordIndices)
-	// trimmedCrs = slices.DeleteFunc[[]ConditionRecord](trimmedCrs, invalidSoFar)
-	trimmedCrs = uniqueRecords(trimmedCrs)
-	// end := time.Now()
-	// duration := end.Sub(start)
-
-	// fmt.Println("Duration:", duration)
-	return placeNextDamagedSpring(trimmedCrs)
-}
-
-func conditionRecordsSame(c1, c2 ConditionRecord) bool {
-	if c1.record != c2.record || slices.Compare[[]int](c1.groups, c2.groups) != 0 {
-		return false
-	}
-	return true
+	return cr.record + strings.Join(hashedNums, " ")
 }
 
 // Helper functions for part 2
