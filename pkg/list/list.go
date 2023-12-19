@@ -3,13 +3,13 @@ package list
 
 import "slices"
 
-func ListOfListsOfIntAreEqual(list1 [][]int, list2 [][]int) bool {
+func ListOfListsAreEqual[T rune | int](list1 [][]T, list2 [][]T) bool {
 	if len(list1) != len(list2) {
 		return false
 	}
 
 	for i := range list1 {
-		if slices.Compare[[]int](list1[i], list2[i]) != 0 {
+		if !slices.Equal[[]T](list1[i], list2[i]) {
 			return false
 		}
 	}
