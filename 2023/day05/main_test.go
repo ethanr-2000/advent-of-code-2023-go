@@ -153,7 +153,7 @@ func Test_calculateSeedRanges(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calculateSeedRanges(tt.input); !list.ListOfListsOfIntAreEqual(got, tt.want) {
+			if got := calculateSeedRanges(tt.input); !list.ListOfListsAreEqual[int](got, tt.want) {
 				t.Errorf("calculateSeedRanges() = %v, want %v", got, tt.want)
 			}
 		})
