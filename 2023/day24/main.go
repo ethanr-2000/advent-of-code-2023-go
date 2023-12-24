@@ -120,7 +120,6 @@ func getHailstones(parsed []string, ignoreZ bool) []Hailstone {
 }
 
 func findIntersection(h1, h2 Hailstone) ([3]float64, bool) {
-
 	xDiff := (h1.p[0] - h2.p[0])
 	xVDiff := (h1.v[0] - h2.v[0])
 

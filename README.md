@@ -7,11 +7,11 @@ The table below shows the best 3 of 4 consecutive runtimes. Doesn't include `go 
 
 | Day | Runtime | Day | Runtime | Day | Runtime | Day | Runtime | Day | Runtime |
 |-----|---------|-----|---------|-----|---------|-----|---------|-----|---------|
-| 1   | 72ms    | 6   | 71ms    | 11  | 120ms   | 16  |         | 21  |         |
+| 1   | 72ms    | 6   | 71ms    | 11  | 120ms   | 16  | 12.1s   | 21  |         |
 | 2   | 77ms    | 7   | 120ms   | 12  | 2365ms  | 17  |         | 22  |         |
-| 3   | 75ms    | 8   | 79ms    | 13  | 107ms   | 18  |         | 23  |         |
-| 4   | 84ms    | 9   | 81m     | 14  |         | 19  |         | 24  |         |
-| 5   | 696ms   | 10  | 122ms   | 15  |         | 20  |         | 25  |         |
+| 3   | 75ms    | 8   | 79ms    | 13  | 107ms   | 18  | 64ms    | 23  |         |
+| 4   | 84ms    | 9   | 81m     | 14  | 93ms    | 19  | 94ms    | 24  |         |
+| 5   | 696ms   | 10  | 122ms   | 15  | 75ms    | 20  | 96ms    | 25  |         |
 
 # Usage
 
