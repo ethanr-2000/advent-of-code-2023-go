@@ -8,7 +8,7 @@ import (
 )
 
 func GetNumbers(str string) []int {
-	re := regexp.MustCompile(`(\d+)`)
+	re := regexp.MustCompile(`(-?\d+)`)
 
 	var numbers []int
 	matches := re.FindAllStringSubmatch(str, -1)
@@ -80,4 +80,12 @@ func LengthsOfGroupsOfChar(s string, c rune) []int {
 func Count(s string, c rune) int {
 	re := regexp.MustCompile(regexp.QuoteMeta(string(c)))
 	return len(re.FindAllString(s, -1))
+}
+
+// gets /w
+func GetWords(s string) []string {
+	re := regexp.MustCompile(`(([a-zA-Z]+))`)
+	matches := re.FindAllString(s, -1)
+
+	return matches
 }
