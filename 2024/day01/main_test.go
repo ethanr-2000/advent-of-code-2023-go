@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-var example1 = `?###???????? 3,2,1
-???.### 1,1,3
-.??..??...?##. 1,1,3
-?#?#?#?#?#?#?#? 1,3,1,6
-????.#...#... 4,1,1
-????.######..#####. 1,6,5`
+var example1 = `3   4
+4   3
+2   5
+1   3
+3   9
+3   3`
 
 func Test_part1(t *testing.T) {
 	tests := []struct {
@@ -21,7 +21,7 @@ func Test_part1(t *testing.T) {
 		{
 			name:  "example",
 			input: example1,
-			want:  21,
+			want:  11,
 		},
 		// {
 		// 	name:  "actual",
@@ -38,6 +38,13 @@ func Test_part1(t *testing.T) {
 	}
 }
 
+var example2 = `3   4
+4   3
+2   5
+1   3
+3   9
+3   3`
+
 func Test_part2(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -46,9 +53,14 @@ func Test_part2(t *testing.T) {
 	}{
 		{
 			name:  "example",
-			input: example1,
-			want:  525152,
+			input: example2,
+			want:  31,
 		},
+		// {
+		// 	name:  "actual",
+		// 	input: input,
+		// 	want:  0,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
