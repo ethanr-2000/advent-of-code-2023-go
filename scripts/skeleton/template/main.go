@@ -1,6 +1,8 @@
 package main
 
 import (
+	"advent-of-code-go/pkg/regex"
+
 	_ "embed"
 	"flag"
 	"fmt"
@@ -46,9 +48,12 @@ func main() {
 
 func part1(input string) int {
 	parsed := parseInput(input)
-	_ = parsed
+	var nums [][]int 
+	for _, line := range parsed {
+		nums = append(nums, regex.GetNumbers(line))
+	}
 
-	return 0
+	return len(nums)
 }
 
 func part2(input string) int {
