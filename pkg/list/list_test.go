@@ -7,7 +7,6 @@ import (
 	"advent-of-code-go/pkg/list"
 )
 
-
 func Test_ListOfListsAreEqualInt(t *testing.T) {
 	tests := []struct {
 		name string
@@ -189,6 +188,12 @@ func Test_DeleteAtIndices(t *testing.T) {
 			input:   []string{"A", "B", "C"},
 			indices: []int{0, 2},
 			want:    []string{"B"},
+		},
+		{
+			name:    "last",
+			input:   []string{"A", "B", "C"},
+			indices: []int{2},
+			want:    []string{"A", "B"},
 		},
 	}
 	for _, tt := range tests {
