@@ -66,15 +66,6 @@ type File struct {
 	moved                 bool
 }
 
-/*
-12345
-
-0..111....22222
-
-\/ first step \/
-
-022111....222..
-*/
 
 // Helper functions for part 1
 
@@ -172,13 +163,19 @@ func checksum(files []File) int {
 func compactFilesWhole(files []File) []File {
 	for i := len(files) - 1; i >= 0; i-- {
 		if !files[i].moved {
-			files = attemptMoveFileToSpace(files, i)
+			newFiles, moved := attemptMoveFileToSpace(files, i)
+			files = newFiles
+
+			if moved {
+				// without this, we've skipped a file!
+				i ++
+			}
 		}
 	}
 	return files
 }
 
-func attemptMoveFileToSpace(files []File, indexOfFileToMove int) []File {
+func attemptMoveFileToSpace(files []File, indexOfFileToMove int) ([]File, bool) {
 	for i := range files[0:indexOfFileToMove] {
 		if files[i].subsequentSpaceLength >= files[indexOfFileToMove].length {
 			// there is enough or more than enough space
@@ -193,8 +190,8 @@ func attemptMoveFileToSpace(files []File, indexOfFileToMove int) []File {
 
 			files[i].subsequentSpaceLength = 0 // the potential spaces are now part of the next file
 
-			return list.DeleteAtIndices[File](files, []int{indexOfFileToMove + 1}) // we've added a file, so the index is one off
+			return list.DeleteAtIndices[File](files, []int{indexOfFileToMove + 1}), true // we've added a file, so the index is one off
 		}
 	}
-	return files
+	return files, false
 }

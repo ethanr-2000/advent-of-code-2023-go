@@ -5,7 +5,8 @@ import (
 	"testing"
 )
 
-var example1 = `2333133121414131402`
+var example1 = `2333133121414131402
+`
 
 func Test_part1(t *testing.T) {
 	tests := []struct {
