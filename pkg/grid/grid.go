@@ -52,16 +52,16 @@ func HashGrid(g Grid) string {
 
 func MoveStepsInDirection(l Location, d Direction, steps int) Location {
 	if d == North {
-		return Location{l.X, l.Y-steps}
+		return Location{l.X, l.Y - steps}
 	}
 	if d == East {
-		return Location{l.X+steps, l.Y}
+		return Location{l.X + steps, l.Y}
 	}
 	if d == South {
-		return Location{l.X, l.Y+steps}
+		return Location{l.X, l.Y + steps}
 	}
 	if d == West {
-		return Location{l.X-steps, l.Y}
+		return Location{l.X - steps, l.Y}
 	}
 	return l
 }
@@ -130,5 +130,14 @@ func SimplifyLocation(diff Location) Location {
 	if gcd == 0 {
 		return diff
 	}
-	return Location{diff.X / gcd,diff.Y / gcd}	
+	return Location{diff.X / gcd, diff.Y / gcd}
+}
+
+func LocationInList(l Location, ls []Location) bool {
+	for i := range ls {
+		if ls[i].X == l.X && ls[i].Y == l.Y {
+			return true
+		}
+	}
+	return false
 }
