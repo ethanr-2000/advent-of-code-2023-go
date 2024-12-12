@@ -1,7 +1,9 @@
 //nolint:gosec
 package grid
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type Grid [][]rune
 
@@ -64,6 +66,38 @@ func MoveStepsInDirection(l Location, d Direction, steps int) Location {
 		return Location{l.X - steps, l.Y}
 	}
 	return l
+}
+
+// north, east, south, west
+func FourAdjacent(l Location) (Location, Location, Location, Location) {
+	north := MoveStepsInDirection(l, North, 1)
+	east := MoveStepsInDirection(l, East, 1)
+	south := MoveStepsInDirection(l, South, 1)
+	west := MoveStepsInDirection(l, West, 1)
+	return north, east, south, west
+}
+
+func FourAdjacentList(l Location) []Location {
+	north, east, south, west := FourAdjacent(l)
+	return []Location{north, east, south, west}
+}
+
+// north, northEast, east, southEast, south, southWest, west, northWest
+func EightAdjacent(l Location) (Location, Location, Location, Location, Location, Location, Location, Location) {
+	north := MoveStepsInDirection(l, North, 1)
+	northEast := MoveStepsInDirection(north, East, 1)
+	east := MoveStepsInDirection(l, East, 1)
+	southEast := MoveStepsInDirection(east, South, 1)
+	south := MoveStepsInDirection(l, South, 1)
+	southWest := MoveStepsInDirection(south, West, 1)
+	west := MoveStepsInDirection(l, West, 1)
+	northWest := MoveStepsInDirection(west, North, 1)
+	return north, northEast, east, southEast, south, southWest, west, northWest
+}
+
+func EightAdjacentList(l Location) []Location {
+	north, northEast, east, southEast, south, southWest, west, northWest := EightAdjacent(l)
+	return []Location{north, northEast, east, southEast, south, southWest, west, northWest}
 }
 
 func AllLocations(g Grid) []Location {
