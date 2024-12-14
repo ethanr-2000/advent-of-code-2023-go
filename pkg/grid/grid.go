@@ -2,6 +2,7 @@
 package grid
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -50,6 +51,37 @@ func HashGrid(g Grid) string {
 		}
 	}
 	return string(hash)
+}
+
+func PrintGrid(g Grid) {
+	for _, line := range g {
+		fmt.Println(string(line))
+	}
+	fmt.Println("")
+}
+
+func GetGridFromLocations(locations []Location, width, height int, background, foreground rune) Grid {
+	g := InitialiseGrid(width, height, background)
+	
+	for _, l := range locations {
+		g[l.Y][l.X] = foreground
+	}
+	return g
+}
+
+func InitialiseGrid(width, height int, background rune) Grid {
+	grid := make([][]rune, height)
+	for i := range grid {
+			grid[i] = make([]rune, width)
+	}
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			grid[y][x] = background
+		}
+	}
+
+	return grid
 }
 
 func MoveStepsInDirection(l Location, d Direction, steps int) Location {
