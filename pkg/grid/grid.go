@@ -69,6 +69,18 @@ func GetGridFromLocations(locations []Location, width, height int, background, f
 	return g
 }
 
+func GetLocationsOfCharacter(g Grid, r rune) []Location {
+	var ls []Location
+	for y, line := range g {
+		for x := range line {
+			if g[y][x] == r {
+				ls = append(ls, Location{x, y})
+			}
+		}
+	}
+	return ls
+}
+
 func InitialiseGrid(width, height int, background rune) Grid {
 	grid := make([][]rune, height)
 	for i := range grid {
@@ -82,6 +94,14 @@ func InitialiseGrid(width, height int, background rune) Grid {
 	}
 
 	return grid
+}
+
+func DeepCopyGrid(g Grid) Grid {
+	c := InitialiseGrid(len(g[0]), len(g), '.')
+	for y := range g {
+		copy(c[y], g[y])
+	}
+	return c
 }
 
 func MoveStepsInDirection(l Location, d Direction, steps int) Location {
