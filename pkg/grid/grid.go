@@ -120,6 +120,32 @@ func MoveStepsInDirection(l Location, d Direction, steps int) Location {
 	return l
 }
 
+func DirectionBetweenLocations(l1, l2 Location) Direction {
+	if l1.X - l2.X == 1 && l1.Y - l2.Y == 0 {
+		return West
+	}
+	if l1.X - l2.X == -1 && l1.Y - l2.Y == 0 {
+		return East
+	}
+	if l1.X - l2.X == 0 && l1.Y - l2.Y == 1 {
+		return North
+	}
+	if l1.X - l2.X == 0 && l1.Y - l2.Y == -1 {
+		return South
+	}
+	panic("Locations are not adjacent!")
+}
+
+func OppositeDirections(d1, d2 Direction) bool {
+	if (d1 == North && d2 == South) || (d1 == South && d2 == North) {
+		return true
+	}
+	if (d1 == East && d2 == West) || (d1 == West && d2 == East) {
+		return true
+	}
+	return false
+}
+
 // north, east, south, west
 func FourAdjacent(l Location) (Location, Location, Location, Location) {
 	north := MoveStepsInDirection(l, North, 1)
