@@ -3,6 +3,7 @@ package main
 import (
 	"advent-of-code-go/pkg/grid"
 	"advent-of-code-go/pkg/regex"
+	"math"
 
 	_ "embed"
 	"flag"
@@ -84,7 +85,7 @@ type Machine struct {
 	prize grid.Location
 }
 
-func getMachines(input string, error int) []Machine {
+func getMachines(input string, conversionError int) []Machine {
 	lines := strings.Split(input, "\n")
 	numLines := len(lines)
 
@@ -97,35 +98,20 @@ func getMachines(input string, error int) []Machine {
 		machines = append(machines, Machine{
 			a:     grid.Location{X: aNums[0], Y: aNums[1]},
 			b:     grid.Location{X: bNums[0], Y: bNums[1]},
-			prize: grid.Location{X: prizeNums[0] + error, Y: prizeNums[1] + error},
+			prize: grid.Location{X: prizeNums[0] + conversionError, Y: prizeNums[1] + conversionError},
 		})
 	}
 	return machines
 }
 
 func getOptimalSolutionCost(m Machine) int {
-	// x*a + y*b = p
-	minCost := NOT_FOUND_COST
-	for x := 0; x < 100; x++ {
-		if moveCost(x, 0) > minCost {
-			return minCost
-		}
-		aMove := grid.MultiplyDistance(m.a, x)
+	bPresses := float64(m.prize.Y*m.a.X-m.prize.X*m.a.Y) / float64(m.a.X*m.b.Y-m.a.Y*m.b.X)
+	aPresses := (float64(m.prize.X) - float64(m.b.X)*bPresses) / float64(m.a.X)
 
-		for y := 0; y < 100; y++ {
-			if moveCost(x, y) > minCost {
-				// it's only getting more expensive
-				break
-			}
-
-			bMove := grid.MultiplyDistance(m.b, y)
-
-			if grid.LocationsEqual(m.prize, grid.LocationAdd(aMove, bMove)) {
-				minCost = moveCost(x, y)
-			}
-		}
+	if math.Trunc(aPresses) == aPresses && math.Trunc(bPresses) == bPresses {
+		return moveCost(int(aPresses), int(bPresses))
 	}
-	return minCost
+	return NOT_FOUND_COST
 }
 
 func moveCost(x, y int) int {
