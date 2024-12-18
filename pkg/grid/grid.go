@@ -3,6 +3,7 @@ package grid
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -62,7 +63,7 @@ func PrintGrid(g Grid) {
 
 func GetGridFromLocations(locations []Location, width, height int, background, foreground rune) Grid {
 	g := InitialiseGrid(width, height, background)
-	
+
 	for _, l := range locations {
 		g[l.Y][l.X] = foreground
 	}
@@ -84,7 +85,7 @@ func GetLocationsOfCharacter(g Grid, r rune) []Location {
 func InitialiseGrid(width, height int, background rune) Grid {
 	grid := make([][]rune, height)
 	for i := range grid {
-			grid[i] = make([]rune, width)
+		grid[i] = make([]rune, width)
 	}
 
 	for y := 0; y < height; y++ {
@@ -121,16 +122,16 @@ func MoveStepsInDirection(l Location, d Direction, steps int) Location {
 }
 
 func DirectionBetweenLocations(l1, l2 Location) Direction {
-	if l1.X - l2.X == 1 && l1.Y - l2.Y == 0 {
+	if l1.X-l2.X == 1 && l1.Y-l2.Y == 0 {
 		return West
 	}
-	if l1.X - l2.X == -1 && l1.Y - l2.Y == 0 {
+	if l1.X-l2.X == -1 && l1.Y-l2.Y == 0 {
 		return East
 	}
-	if l1.X - l2.X == 0 && l1.Y - l2.Y == 1 {
+	if l1.X-l2.X == 0 && l1.Y-l2.Y == 1 {
 		return North
 	}
-	if l1.X - l2.X == 0 && l1.Y - l2.Y == -1 {
+	if l1.X-l2.X == 0 && l1.Y-l2.Y == -1 {
 		return South
 	}
 	panic("Locations are not adjacent!")
@@ -216,6 +217,11 @@ func MultiplyDistance(l Location, multiplier int) Location {
 
 func ManhattanDistance(l1, l2 Location) int {
 	return AbsDiff(l1.X, l2.X) + AbsDiff(l1.Y, l2.Y)
+}
+
+// truncates
+func PythagorasDistance(l1, l2 Location) int {
+	return int(math.Pow(float64(AbsDiff(l1.X, l2.X)), 2) + math.Pow(float64(AbsDiff(l1.Y, l2.Y)), 2))
 }
 
 func AbsDiff(a, b int) int {
