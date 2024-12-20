@@ -68,16 +68,6 @@ func parseInput(input string) []string {
 
 // Helper functions for part 1
 
-func IntLocation(l grid.Location) int {
-	return l.X*10000 + l.Y
-}
-
-type QueueItem struct {
-	location grid.Location
-	score    int
-	path     []grid.Location
-}
-
 func FindAllCheatsWithSaving(g grid.Grid, cheatsAllowed int, minSaving int) []int {
 	start := grid.GetLocationsOfCharacter(g, 'S')[0]
 	end := grid.GetLocationsOfCharacter(g, 'E')[0]
@@ -86,12 +76,6 @@ func FindAllCheatsWithSaving(g grid.Grid, cheatsAllowed int, minSaving int) []in
 	cheatTimes := []int{}
 	for l1Index, l1 := range noCheatPath {
 		for l2Index, l2 := range noCheatPath {
-			if grid.ValueAtLocation(g, l2) == '#' {
-				continue
-			}
-			if l1Index == l2Index {
-				continue
-			}
 			l1L2Dist := grid.ManhattanDistance(l1, l2)
 			if l1L2Dist > cheatsAllowed {
 				continue
@@ -104,6 +88,18 @@ func FindAllCheatsWithSaving(g grid.Grid, cheatsAllowed int, minSaving int) []in
 		}
 	}
 	return cheatTimes
+}
+
+// copied from day 18
+
+func IntLocation(l grid.Location) int {
+	return l.X*10000 + l.Y
+}
+
+type QueueItem struct {
+	location grid.Location
+	score    int
+	path     []grid.Location
 }
 
 type PriorityQueue []QueueItem
