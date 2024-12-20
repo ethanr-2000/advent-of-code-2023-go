@@ -197,6 +197,18 @@ func LocationsEqual(l1, l2 Location) bool {
 	return l1.X == l2.X && l1.Y == l2.Y
 }
 
+func ListOfLocationsEqual(ls1, ls2 []Location) bool {
+	if len(ls1) != len(ls2) {
+		return false
+	}
+	for i := range ls1 {
+		if !LocationsEqual(ls1[i], ls2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func LocationOutsideGrid(l Location, m Grid) bool {
 	return l.X < 0 || l.X >= len(m[0]) || l.Y < 0 || l.Y >= len(m)
 }
