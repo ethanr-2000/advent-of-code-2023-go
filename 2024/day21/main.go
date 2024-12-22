@@ -6,7 +6,7 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"math"
+	"slices"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -55,7 +55,7 @@ func part1(input string) int {
 	for _, code := range codes {
 		fmt.Println("finding code", code)
 		actions := InputCode(code, 2)
-		c := complexity(code, len(actions))
+		c := complexity(code, actions)
 		fmt.Println(actions, c)
 		totalComplexity += c
 	}
@@ -72,7 +72,7 @@ func part2(input string) int {
 		fmt.Println("finding code", code)
 		actions := InputCode(code, 25)
 
-		c := complexity(code, len(actions))
+		c := complexity(code, actions)
 		fmt.Println(actions, c)
 		totalComplexity += c
 	}
@@ -142,29 +142,21 @@ type System struct {
 }
 
 // for a given code, what's the optimal button presses to input that?
-func InputCode(code string, numberOfRobots int) string {
-	numericA, _ := FindKeyLocation(NumericKeypad, "A")
-	directionalA, _ := FindKeyLocation(DirectionalKeypad, "A")
+func InputCode(code string, numberOfRobots int) int {
+	numericALocation, _ := FindKeyLocation(NumericKeypad, "A")
 
-	resetCache()
-	possibleNumericKeypadPaths := FindActions(NumericKeypad, numericA, code)
-
-	resetCache() // numeric is no good to us here, we're going directional
-	prevPossibleActions := possibleNumericKeypadPaths
+	keypads := make([]Keypad, 1 + numberOfRobots)
+	keypads[0] = NumericKeypad
 	for i := 0; i < numberOfRobots; i++ {
-		fmt.Println("considering robot", i+1, "/", numberOfRobots, ". With", len(prevPossibleActions), "possible paths")
-
-		possibleNextActions := []string{}
-		for _, numericPath := range prevPossibleActions {
-			possibleNextActions = append(possibleNextActions, FindActions(DirectionalKeypad, directionalA, numericPath)...)
-		}
-
-		prevPossibleActions = KeepAllShortestUnique(possibleNextActions)
+		keypads[i+1] = DirectionalKeypad
 	}
 
-	// fmt.Println(len(prevPossibleActions), "final possible actions")
+	resetCache()
+	actions := FindActions(keypads, numericALocation, code, "")
 
-	return prevPossibleActions[0]
+	fmt.Println(actions)
+	return actions
+	// return KeepAllShortestUnique(actions)[0]
 }
 
 func complexity(code string, length int) int {
@@ -178,89 +170,106 @@ type State struct {
 	score int
 }
 
-var FIND_ACTIONS_CACHE = make(map[string]map[grid.Location][]string) // cache[code][start] -> actions
+var FIND_ACTIONS_CACHE = make(map[int]map[string]map[grid.Location]int) // cache[depth][code][start] -> actions
 
-func accessCache(code string, l grid.Location) (actions []string, exists bool) {
-	if _, exists := FIND_ACTIONS_CACHE[code]; !exists {
-		return []string{}, false
+func accessCache(depth int, code string, l grid.Location) (actions int, exists bool) {
+	if _, exists := FIND_ACTIONS_CACHE[depth]; !exists {
+		return -1, false
+	}
+	if _, exists := FIND_ACTIONS_CACHE[depth][code]; !exists {
+		return -1, false
 	}
 
-	actions, exists = FIND_ACTIONS_CACHE[code][l]
+	actions, exists = FIND_ACTIONS_CACHE[depth][code][l]
 	return
 }
 
-func addToCache(code string, l grid.Location, actions []string) []string {
-	if _, exists := FIND_ACTIONS_CACHE[code]; !exists {
-		FIND_ACTIONS_CACHE[code] = make(map[grid.Location][]string)
+func addToCache(depth int, code string, l grid.Location, actionLength int) int {
+	if _, exists := FIND_ACTIONS_CACHE[depth]; !exists {
+		FIND_ACTIONS_CACHE[depth] = make(map[string]map[grid.Location]int)
 	}
-	FIND_ACTIONS_CACHE[code][l] = actions
-	return actions
+	if _, exists := FIND_ACTIONS_CACHE[depth][code]; !exists {
+		FIND_ACTIONS_CACHE[depth][code] = make(map[grid.Location]int)
+	}
+	FIND_ACTIONS_CACHE[depth][code][l] = actionLength
+	return actionLength
 }
 
 func resetCache() {
-	FIND_ACTIONS_CACHE = make(map[string]map[grid.Location][]string)
+	FIND_ACTIONS_CACHE = make(map[int]map[string]map[grid.Location]int)
 }
 
+// need to split out finding the path at a depth, and going deeper
+
 // find all shortest-distance paths 
-func FindActions(keypad Keypad, start grid.Location, codeRemaining string) ([]string) {
-	if a, exists := accessCache(codeRemaining, start); exists {
-		// fmt.Println("Using cache for", codeRemaining, "from start", start)
+func FindActions(keypads []Keypad, start grid.Location, codeRemaining string, actionsBefore string) int {
+	if a, exists := accessCache(len(keypads), codeRemaining, start); exists {
+		fmt.Println("Using cache for", codeRemaining, "from start", start, "at depth", len(keypads))
 		return a
 	}
 
+	keypad := keypads[0]
+
 	targetKey := string(codeRemaining[0])
 	targetKeyLocation, exists := FindKeyLocation(keypad, targetKey)
-	if !exists {
-		panic("tried to go to key that doesn't exist")
-	}
+	if !exists { panic("tried to go to key that doesn't exist") }
 	codeRemaining = codeRemaining[1:]
 
 	startState := State{
 		l: start,
 		path: []grid.Location{start},
-		actions: "",
+		actions: actionsBefore,
 		score: 0,
 	}
 
-	minScore := math.MaxInt
+	// minScore := math.MaxInt
 	stateQueue := []State{startState}
 	visited := make(map[string]int) // [keystr] = costtothere
-	shortestActions := []string{}
+
+	humanActions := []int{}
 
 	for len(stateQueue) > 0 {
 		currentState := stateQueue[0]
 		stateQueue = stateQueue[1:]
 
-		if currentState.score > minScore {
-			continue
-		}
+		// if currentState.score > minScore {
+		// 	continue
+		// }
 
 		if grid.LocationsEqual(currentState.l, targetKeyLocation) {
-			if currentState.score <= minScore {
-				minScore = currentState.score
+			// if currentState.score <= minScore {
+				// minScore = currentState.score
 
 				currentActions := currentState.actions + "A" // always finish by pressing the target button
 
 				if len(codeRemaining) > 0 {
 					// keep finding the path to the code
 					// for all possible next steps, add them to the list
-					actionsFromHere := FindActions(keypad, currentState.l, codeRemaining)
-					for _, a := range actionsFromHere {
-						shortestActions = append(shortestActions, currentActions + a)
-					}
+					actions := FindActions(keypads, currentState.l, codeRemaining, currentActions)
+					humanActions = append(humanActions, actions)
+					// fmt.Println(currentActions)
 				} else {
-					// code is input
-					shortestActions = append(shortestActions, currentActions) 
+					// we've done the code at this level
+					if len(keypads) == 1 {
+						// done!
+						// fmt.Println("Human button solution", currentActions)
+						humanActions = append(humanActions, len(currentActions))
+					} else {
+						// the path is now the code. deeper...
+						startingLocation, _ := FindKeyLocation(keypads[1], "A")
+						// fmt.Println("going deeper", currentActions)
+						actions := FindActions(keypads[1:], startingLocation, currentActions, "")
+						// fmt.Println("Back up, adding ", actions, "to humanActions")
+						humanActions = append(humanActions, actions)
+					}
 				}
-			}
+			// }
 			continue
 		}
 
 		for _, nextLocation := range grid.FourAdjacentList(currentState.l) {
 			keyStr, exists := keypad[nextLocation]
-			if !exists {
-				continue
-			}
+			if !exists { continue }
 			
 			score := currentState.score + 1
 			
@@ -273,7 +282,6 @@ func FindActions(keypad Keypad, start grid.Location, codeRemaining string) ([]st
 			copy(nextPath, currentState.path)
 			
 			dir := grid.DirectionBetweenLocations(currentState.l, nextLocation)
-
 			stateQueue = append(stateQueue, State{
 				l: nextLocation,
 				path: append(nextPath, nextLocation),
@@ -282,12 +290,9 @@ func FindActions(keypad Keypad, start grid.Location, codeRemaining string) ([]st
 			})
 		}
 	}
+	// fmt.Println("Human actions for:", targetKey + codeRemaining, ":", humanActions, ". Depth", len(keypads))
 
-	// shortest actions may contain sub-optimal paths
-	// need to filter to only those with the min length
-	shortestActions = KeepAllShortestUnique(shortestActions)
-
-	return addToCache(targetKey + codeRemaining, start, shortestActions)
+	return addToCache(len(keypads), targetKey + codeRemaining, start, slices.Min[[]int](humanActions))
 }
 
 func KeepAllShortestUnique(actions []string) []string {

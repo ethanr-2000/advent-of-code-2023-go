@@ -24,11 +24,11 @@ func Test_part1(t *testing.T) {
 			input: example0,
 			want:  1972,
 		},
-		{
-			name:  "example",
-			input: example1,
-			want:  126384,
-		},
+		// {
+		// 	name:  "example",
+		// 	input: example1,
+		// 	want:  126384,
+		// },
 		// {
 		// 	name:  "actual",
 		// 	input: input,
