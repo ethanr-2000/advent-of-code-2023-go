@@ -44,6 +44,16 @@ func Test_GetNumbers(t *testing.T) {
 			input: "",
 			want:  []int{},
 		},
+		{
+			name:  "029A",
+			input: "029A",
+			want:  []int{29},
+		},
+		{
+			name:  "180A",
+			input: "180A",
+			want:  []int{180},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
