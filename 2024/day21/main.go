@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"math"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -201,19 +200,14 @@ func resetCache() {
 	FIND_ACTIONS_CACHE = make(map[int]map[string]int)
 }
 
-// need to split out finding the path at a depth, and going deeper
-
 func GetAllPathsOnKeypad(k Keypad) Paths {
-	total := 0
 	paths := make(Paths)
 	for startLocation, start := range k {
 		paths[start] = make(map[string][]string)
 		for endLocation, end := range k {
 			paths[start][end] = pruneInefficientPaths(findPaths(k, startLocation, endLocation))
-			total += len(paths[start][end])
 		}
 	}
-	// fmt.Println(total)
 	return paths
 }
 
@@ -275,16 +269,6 @@ func findPaths(k Keypad, start, end grid.Location) []string {
 	return paths
 }
 
-
-// TODO:
-// The problem now is that we can't get to the bottom fast enough for all the caches
-// The paths just explode, even at step 3
-// need to figure out a way of breaking it down further
-
-// OMG we don't have to worry about the pointer, because
-// as long as you end on a button click, we'll always be back at A!
-// MINDBLOWN
-
 // find all shortest-distance paths 
 func FindHumanActions(keypads []Keypad, code string) int {
 	// fmt.Println("considering depth", len(keypads), "code:", code)
@@ -321,64 +305,54 @@ func FindHumanActions(keypads []Keypad, code string) int {
 		return addToCache(1, code, minLength)
 	}
 
-	// humanActions := []int{}
 	humanActions := make([]int, len(paths))
-	// fmt.Println("paths:", paths)
 	for pathNum, p := range paths {
 		humanActions[pathNum] = 0
-		for i, _ := range p {
+		for i := range p {
 			if i == 0 { continue }
 			// progressive calculation to take advantage of caching better
 			// for every possible path at this level, the path is the new code
 			humanActions[pathNum] = FindHumanActions(keypads[1:], p[:i+1])
 		}
-		// humanActions = append(humanActions, FindHumanActions(keypads[1:], p))
+		// humanActions[pathNum] = FindHumanActions(keypads[1:], p[:len(p)-1])
 	}
-	// fmt.Println(paths)
-	fmt.Println("final action length", humanActions, "code", code)
 
 	return addToCache(len(keypads), code, slices.Min(humanActions))
 }
 
-func isDirectionChange(a, b rune) bool {
-	if a == 'A' || b == 'A' {
-		return false // Non-directional characters don't count.
-	}
-	return a != b
-}
+// why do <^< when you can do <<^ ?
+func directionsAreGrouped(s string) bool {
+	seen := make(map[rune]bool)
+	lastDirection := rune(0)
 
-// Check if a string contains unnecessary direction changes.
-func hasUnnecessaryChanges(s string) bool {
-	for i := 1; i < len(s)-1; i++ {
-		prev, curr, next := rune(s[i-1]), rune(s[i]), rune(s[i+1])
-		if isDirectionChange(prev, curr) && isDirectionChange(curr, next) {
-			return true // Unnecessary change detected
+	for _, c := range s {
+		if c != 'A' {
+			if c != lastDirection {
+				if seen[c] {
+					return false
+				}
+				seen[c] = true
+				lastDirection = c
+			}
 		}
 	}
-	return false
+
+	return true
 }
 
 func pruneInefficientPaths(ps []string) []string {
 	result := []string{}
 	for _, p := range ps {
-		if !hasUnnecessaryChanges(p) {
+		split := strings.Split(p, "A")
+		hasChangesFlag := false
+		for _, s := range split {
+			if !directionsAreGrouped(s) {
+				hasChangesFlag = true
+			}
+		}
+		if !hasChangesFlag {
 			result = append(result, p)
 		}
 	}
 	return result
-}
-
-func totalSize(m interface{}) int {
-	switch v := reflect.ValueOf(m); v.Kind() {
-	case reflect.Map:
-		size := 0
-		for _, key := range v.MapKeys() {
-			size++ // Count the current key
-			value := v.MapIndex(key).Interface()
-			size += totalSize(value) // Recurse into nested maps
-		}
-		return size
-	default:
-		return 0 // Non-map values don't contribute to size
-	}
 }
