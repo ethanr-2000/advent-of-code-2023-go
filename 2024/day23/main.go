@@ -1,6 +1,7 @@
 package main
 
 import (
+	"advent-of-code-go/pkg/set"
 	"sort"
 
 	_ "embed"
@@ -72,17 +73,17 @@ func parseInput(input string) []string {
 
 // Helper functions for part 1
 
-type Graph map[string]Set
+type Graph map[string]set.Set
 
 func constructLanMap(parsed []string) Graph {
 	m := make(Graph)
 	for i := range parsed {
 		computers := strings.Split(parsed[i], "-")
 		if _, has := m[computers[0]]; !has {
-			m[computers[0]] = make(Set)
+			m[computers[0]] = make(set.Set)
 		}
 		if _, has := m[computers[1]]; !has {
-			m[computers[1]] = make(Set)
+			m[computers[1]] = make(set.Set)
 		}
 		m[computers[0]].Add(computers[1])
 		m[computers[1]].Add(computers[0])
@@ -106,7 +107,7 @@ func findTriplets(m Graph) [][]string {
 	return uniqueNetwork(triples)
 }
 
-func password(network Set) string {
+func password(network set.Set) string {
 	sorted := network.ToSlice()
 	sort.Strings(sorted)
 	return strings.Join(sorted, ",")
@@ -117,7 +118,7 @@ func uniqueNetwork(network [][]string) [][]string {
 	var result [][]string
 
 	for _, n := range network {
-		key := password(NewSetFromSlice(n))
+		key := password(set.NewSetFromSlice(n))
 
 		if !seen[key] {
 			seen[key] = true
@@ -131,15 +132,15 @@ func uniqueNetwork(network [][]string) [][]string {
 // Helper functions for part 2
 
 func largestInterconnectedNetwork(m Graph) string {
-	results := make(chan Set)
+	results := make(chan set.Set)
 
-	potential := make(Set)
+	potential := make(set.Set)
 	for k := range m {
 		potential.Add(k)
 	}
 
 	go func() {
-		BronKerbosch(make(Set), potential, make(Set), m, results)
+		BronKerbosch(make(set.Set), potential, make(set.Set), m, results)
 		close(results)
 	}()
 
@@ -154,10 +155,8 @@ func largestInterconnectedNetwork(m Graph) string {
 	return longestPassword
 }
 
-type Set map[string]bool
-
 // https://www.geeksforgeeks.org/maximal-clique-problem-recursive-solution/
-func BronKerbosch(current, potential, excluded Set, m Graph, results chan<- Set) {
+func BronKerbosch(current, potential, excluded set.Set, m Graph, results chan<- set.Set) {
 	if len(potential) == 0 && len(excluded) == 0 {
 		results <- current
 		return
@@ -165,7 +164,7 @@ func BronKerbosch(current, potential, excluded Set, m Graph, results chan<- Set)
 	for len(potential) > 0 {
 		computer := potential.Pop()
 		BronKerbosch(
-			current.Union(NewSetFromSlice([]string{computer})),
+			current.Union(set.NewSetFromSlice([]string{computer})),
 			potential.Intersection(m[computer]),
 			excluded.Intersection(m[computer]),
 			m,
@@ -173,60 +172,4 @@ func BronKerbosch(current, potential, excluded Set, m Graph, results chan<- Set)
 		)
 		excluded.Add(computer)
 	}
-}
-
-func NewSetFromSlice(slice []string) Set {
-	set := make(Set)
-	for _, v := range slice {
-		set.Add(v)
-	}
-	return set
-}
-
-func (s Set) Pop() string {
-	for k := range s {
-		s.Delete(k)
-		return k
-	}
-	panic("Tried to pop empty set")
-}
-
-func (s Set) Delete(value string) {
-	delete(s, value)
-}
-
-func (s Set) Add(value string) {
-	s[value] = true
-}
-
-// Union: Return a new Set that is the union of two Sets
-func (s Set) Union(other Set) Set {
-	result := make(Set)
-	for v := range s {
-		result.Add(v)
-	}
-	for v := range other {
-		result.Add(v)
-	}
-	return result
-}
-
-// Intersection: Return a new Set that is the intersection of two Sets
-func (s Set) Intersection(other Set) Set {
-	result := make(Set)
-	for v := range s {
-		if _, exists := other[v]; exists {
-			result.Add(v)
-		}
-	}
-	return result
-}
-
-// Convert Set to Slice
-func (s Set) ToSlice() []string {
-	result := []string{}
-	for v := range s {
-		result = append(result, v)
-	}
-	return result
 }

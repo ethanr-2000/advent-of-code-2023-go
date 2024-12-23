@@ -18,6 +18,20 @@ const (
 	East  Direction = 3
 )
 
+var CaratDirectionMap = map[string]Direction {
+	"^": North,
+	"<": West,
+	"v": South,
+	">": East,
+}
+
+var DirectionCaratMap = map[Direction]string {
+	North: "^",
+	West: "<",
+	South: "v",
+	East: ">",
+}
+
 type Location struct {
 	X, Y int
 }
