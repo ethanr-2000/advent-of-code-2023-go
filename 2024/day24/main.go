@@ -2,6 +2,7 @@ package main
 
 import (
 	"advent-of-code-go/pkg/regex"
+	"advent-of-code-go/pkg/set"
 	_ "embed"
 	"flag"
 	"fmt"
@@ -50,15 +51,22 @@ func main() {
 
 func part1(input string) int {
 	circuit := getCircuit(input)
-  return circuit.Simulate()
+  output, _ := circuit.Simulate()
+	return output
 }
 
 func part2(input string) string {
 	circuit := getCircuit(input)
-	circuit.Simulate()
+	circuit.Visualise()
 	
-	swapped := circuit.Fix()
-	return strings.Join(swapped, ",")
+	// I wrote a lot of stuff trying to get this to be automated
+	// in the end, christmas called and I just went through manually
+	// should have done that at the start
+
+	// swapped := circuit.Fix()
+	// slices.Sort(swapped)
+	// return strings.Join(swapped, ",")
+	return ""
 }
 
 func parseInput(input string) []string {
@@ -70,7 +78,6 @@ func parseInput(input string) []string {
 type Wire struct {
 	name string
 	state bool
-	on bool
 }
 
 type GateType string
@@ -109,7 +116,6 @@ func getCircuit(input string) Circuit {
 		wires[info[0]] = &Wire{
 			name: info[0],
 			state: state,
-			on: true,
 		}
 	}
 
@@ -122,7 +128,6 @@ func getCircuit(input string) Circuit {
 				wires[w] = &Wire{
 					name: w,
 					state: false, // arbitrarily select false
-					on: false,
 				}
 			}
 		}
@@ -150,33 +155,47 @@ func getCircuit(input string) Circuit {
 	}
 }
 
-func (c *Circuit) Simulate() int {
-	onWires := c.GetInputWires()
-
-	// xWires := c.GetWiresWithPrefix("x")
-	// fmt.Println("In simulate:")
-	// for i := range xWires {
-	// 	fmt.Print(xWires[len(xWires)-1-i].state, " ")
-	// }
-	// fmt.Println("=========")
-	for i := range onWires {
-		fmt.Println(&onWires[i], onWires[i].name, onWires[i].state)
+func (c *Circuit) Visualise() {
+	affecting := []string{}
+	for _, w := range c.wires {
+		a := c.getAllWiresAffecting(w.name)
+		affecting = append(affecting, fmt.Sprintf("%s affected by %v", w.name, a))
 	}
-	
+	slices.Sort(affecting)
+	for a := range affecting {
+		fmt.Println(affecting[a])
+	}
+}
+
+func (c *Circuit) Simulate() (int, bool) {
+	onWires := c.GetInputWires()
+	onWireNames := []string{}
+
+	for i := range onWires {
+		onWireNames = append(onWireNames, onWires[i].name)
+	}
+
 	gates := c.gates
-	for len(gates) > 0 {
+	loopBreak := []string{}
+	for len(gates) > 0 && len(gates) != len(loopBreak) {
 		g := gates[0]
 		gates = gates[1:]
 
-		if slices.Contains(onWires, g.inputs[0]) && slices.Contains(onWires, g.inputs[1]) {
+		if slices.Contains(onWireNames, g.inputs[0].name) && slices.Contains(onWireNames, g.inputs[1].name) {
+			onWireNames = append(onWireNames, g.output.name)
+			loopBreak = []string{}
 			c.UpdateGate(&g)
-			onWires = append(onWires, g.output)
 		} else {
 			// move to the end, we'll come back to it once the wires are on
 			gates = append(gates, g)
+			loopBreak = append(loopBreak, g.output.name)
 		}
 	}
-	return c.GetOutput()
+	if len(gates) > 0 {
+		// we broke out early because the circuit wasn't working
+		return 0, true
+	}
+	return c.GetOutput(), false
 }
 
 func (c *Circuit) GetOutput() int {
@@ -222,13 +241,16 @@ func (c *Circuit) FindGateWithInput(wire *Wire) *Gate {
 	return nil
 }
 
-func (c *Circuit) UpdateGate(g *Gate) {
-	if g.output.on { return }
-	for _, input := range g.inputs {
-		if !input.on { return }
+func (c *Circuit) FindGateWithOutput(wire *Wire) *Gate {
+	for i, gate := range c.gates {
+		if gate.output == wire {
+			return &c.gates[i]
+		}
 	}
-	
-	g.output.on = true
+	return nil
+}
+
+func (c *Circuit) UpdateGate(g *Gate) {
 	switch g.gateType {
 	case AND:
 		g.output.state = g.inputs[0].state && g.inputs[1].state
@@ -269,38 +291,59 @@ func (c *Circuit) CircuitIsCorrect() bool {
 }
 
 func (c *Circuit) Fix() []string {
-	// swappedGates := []string{}
-	// outWires := c.GetOutputWires()
+	outWires := c.GetOutputWires()
+	
+	wiresSwapped := []string{}
+	prevBestScore := math.MaxInt
+	
+	for b := range outWires {
+		if c.TestBit(b) == 0 {
+			fmt.Println("bit", b, "is GOOD")
+			continue 
+		}
+		fmt.Println("bit", b, "is BAD. Starting swaps")
+		
+		
+		wiresAffectingOut := set.NewSetFromSlice([]string{})
+		for o := range outWires[b:] {
+			w := c.getAllWiresAffecting(outWires[o].name)
+			wiresAffectingOut = wiresAffectingOut.Union(set.NewSetFromSlice(w))
+		}
 
-	// inputs := c.GetInputs()
-	// output := c.GetOutput()
-
-	// wiresSwapped := []string{}
-
-	for i := range c.gates {
-		for j := range c.gates {
-			if i == j { continue }
-			for k := range c.gates {
-				if i == k || j == k { continue }
-				for l := range c.gates {
-					if i == l || j == l || k == l { continue }
-					c.gates[i].output, c.gates[j].output = c.gates[j].output, c.gates[i].output
-					c.gates[k].output, c.gates[l].output = c.gates[l].output, c.gates[k].output
-
-					if c.Test() {
-						return []string{
-							c.gates[i].output.name,
-							c.gates[j].output.name,
-							c.gates[k].output.name,
-							c.gates[l].output.name,
-						}
-					}
+		// wiresAffectingOut := c.wires
+		for iName := range wiresAffectingOut {
+			for jName := range wiresAffectingOut {
+				if iName == jName { continue }
+				if slices.Contains(wiresSwapped, iName) || slices.Contains(wiresSwapped, jName) {
+					continue
 				}
+
+				iGate := c.FindGateWithOutput(c.wires[iName])
+				jGate := c.FindGateWithOutput(c.wires[jName])
+
+				if iGate == nil || jGate == nil { continue }
+
+				fmt.Println("testing", c.wires[iName].name, c.wires[jName].name)
+				iGate.output, jGate.output = jGate.output, iGate.output
+	
+				testResult := c.TestBit(b)
+				if testResult < prevBestScore {
+					prevBestScore = testResult
+					wiresSwapped = append(wiresSwapped, c.wires[iName].name, c.wires[jName].name)
+					fmt.Println(wiresSwapped)
+				} else {
+					// swap back
+					iGate.output, jGate.output = jGate.output, iGate.output
+				}
+				// if testResult == 0 {
+				// 	fmt.Println("testResult")
+				// 	return wiresSwapped
+				// }
 			}
 		}
 	}
 
-	return []string{}
+	return wiresSwapped
 
 
 
@@ -340,40 +383,67 @@ func (c *Circuit) Fix() []string {
 	// return wiresSwapped
 }
 
-func (c *Circuit) Test() bool {
-	testCases := 100
-	numbers := make([]int, testCases)
-	maxOut := int(math.Pow(float64(2), float64(len(c.GetOutputWires())-1)))-1
-	for i := 0; i < testCases; i++ {
-		numbers[i] = rand.Intn(maxOut) // Generate number in range [0, 1,000,000,000]
-	}
+// func (c *Circuit) Test() bool {
+// 	testCases := 100
+// 	numbers := make([]int, testCases)
+// 	maxOut := int(math.Pow(float64(2), float64(len(c.GetOutputWires())-1)))-1
+// 	for i := 0; i < testCases; i++ {
+// 		numbers[i] = rand.Intn(maxOut) // Generate number in range of the bits
+// 	}
 
-	for i, x := range numbers[:testCases/2] {
-		y := numbers[i*2]
-		wrongBits := c.TestCase(x, y) // wrong bits should be 0 if correct
+// 	for i, x := range numbers[:testCases/2] {
+// 		y := numbers[i + testCases/2]
+		
+// 		wrongBits := c.TestCase(x, y) // wrong bits should be 0 if correct
+// 		if wrongBits != 0 {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
 
-		if wrongBits != 0 {
-			return false
+func (c *Circuit) getAllWiresAffecting(w string) []string {
+	toConsider := []string{w}
+	inputWireNames := []string{}
+	for len(toConsider) > 0 {
+		w := c.wires[toConsider[0]]
+		g := c.FindGateWithOutput(w)
+		toConsider = toConsider[1:]
+		if g == nil {
+			// this wire is an input
+			// inputWireNames = append(inputWireNames, w.name)
+		} else {
+			inputWireNames = append(inputWireNames, g.inputs[0].name, g.inputs[1].name)
+			// toConsider = append(toConsider, g.inputs[0].name, g.inputs[1].name)
 		}
 	}
-	return true
+	return inputWireNames
 }
 
-func (c *Circuit) TestBit(z int) bool {
-	testCases := 10000
+func (c *Circuit) TestBit(z int) int {
+	testCases := 10
 	numbers := make([]int, testCases)
+	maxOut := int(math.Pow(float64(2), float64(len(c.GetOutputWires()))))
+	maxIn := maxOut/2 - 1
+
+	wrongBits := 0
 	for i := 0; i < testCases; i++ {
-		numbers[i] = rand.Intn(1_000_000_0) // Generate number in range [0, 1,000,000,000]
+		numbers[i] = rand.Intn(maxIn) // Generate number in range [0, 1,000,000,000]
 	}
 
 	for i, x := range numbers[:testCases/2] {
-		y := numbers[i*2]
-		wrongBits := c.TestCase(x, y) // wrong bits should be 0 if correct
-		if wrongBits & (1 << z) != 0 {
-			return false
+		y := numbers[i + testCases/2]
+
+		// fmt.Println("testing case", x, y, "correct to bits", z)
+		wrongBitsCase := c.TestCase(x, y) // wrong bits should be 0 if correct
+		for bit := 0; bit <= z; bit++ {
+			// fmt.Println(bit, wrongBits & (1 << z) != 0) // true == bit is wrong
+			if wrongBitsCase & (1 << z) != 0 {
+				wrongBits += wrongBitsCase & (1 << z)
+			}
 		}
 	}
-	return true
+	return wrongBits
 }
 
 func (c *Circuit) TestCase(x int, y int) int {
@@ -388,16 +458,29 @@ func (c *Circuit) TestCase(x int, y int) int {
 		c.wires[yWires[i].name].state = y & (1 << i) != 0
 	}
 
-	for i := range xWires {
-		fmt.Println(&xWires[i], xWires[i].name, xWires[i].state)
-	}
-	for i := range yWires {
-		fmt.Println(&yWires[i], yWires[i].name, yWires[i].state)
-	}
+	// fmt.Println("===in test case====")
+	// for i := range xWires {
+	// 	fmt.Println(&xWires[i], xWires[i].name, xWires[i].state)
+	// 	address := c.wires[xWires[i].name]
+	// 	fmt.Println(&address, address.name, address.state)
+	// }
+	// fmt.Println("=========")
+	// for i := range yWires {
+	// 	fmt.Println(&yWires[i], yWires[i].name, yWires[i].state)
+	// 	address := c.wires[yWires[i].name]
+	// 	fmt.Println(&address, address.name, address.state)
+	// }
+	// fmt.Println("=========")
 
-	fmt.Println("Output:", c.Simulate(), ". Should be", x+y)
+	// fmt.Println("Output:", c.Simulate(), ". Should be", x, "+", y, "=", x+y)
 
 	// return 0 if the output is correct
-	return c.Simulate() ^ (x + y)
+	// fmt.Println("simulating")
+	out, err := c.Simulate() 
+	if err {
+		// return max possible out (all 1s, meaning all wrong)
+		return int(math.Pow(float64(2), float64(len(c.GetOutputWires()))))
+	}
+	return out ^ (x + y)
 }
 
